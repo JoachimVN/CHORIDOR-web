@@ -408,11 +408,11 @@ function resetGame() {
 
 // ─── Online: socket setup ─────────────────────────────────────────────────
 
-function initSocket(callback) {
+function initSocket(errorElId, callback) {
     if (socket?.connected) { callback(); return; }
     socket = io(BACKEND_URL, { transports: ['websocket', 'polling'] });
 
-    socket.on('connect_error', () => showJoinError('Could not connect to server'));
+    socket.on('connect_error', () => showLobbyError(errorElId, 'Could not connect to server'));
 
     socket.on('room-created', ({ code }) => {
         onlineRole = 'p1';
@@ -430,7 +430,7 @@ function initSocket(callback) {
 
     socket.on('opponent-move', data => applyOpponentMove(data));
 
-    socket.on('room-error', msg => showJoinError(msg));
+    socket.on('room-error', msg => showLobbyError(errorElId, msg));
 
     socket.on('opponent-left', () => {
         onlineMode  = false;
@@ -454,8 +454,9 @@ function hideLobby() {
     document.getElementById('lobby-overlay').classList.add('hidden');
 }
 
-function showJoinError(msg) {
-    const el = document.getElementById('join-error');
+function showLobbyError(elId, msg) {
+    const el = document.getElementById(elId);
+    if (!el) return;
     el.textContent = msg;
     el.classList.remove('hidden');
 }
@@ -466,7 +467,7 @@ document.getElementById('btn-online').addEventListener('click', () => showLobbyV
 document.getElementById('btn-online-back').addEventListener('click', () => showLobbyView('lview-mode'));
 
 document.getElementById('btn-create').addEventListener('click', () => {
-    initSocket(() => socket.emit('create-room'));
+    initSocket('create-error', () => socket.emit('create-room'));
 });
 
 document.getElementById('btn-join').addEventListener('click', () => showLobbyView('lview-join'));
@@ -491,7 +492,7 @@ document.getElementById('btn-join-confirm').addEventListener('click', () => {
     const code = document.getElementById('room-code-input').value.trim().toUpperCase();
     if (!code) return;
     document.getElementById('join-error').classList.add('hidden');
-    initSocket(() => socket.emit('join-room', code));
+    initSocket('join-error', () => socket.emit('join-room', code));
 });
 
 document.getElementById('room-code-input').addEventListener('keydown', e => {
