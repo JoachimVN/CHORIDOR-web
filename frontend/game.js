@@ -299,21 +299,41 @@ function placeWall(row, col, orientation) {
 
     const wallKey = JSON.stringify({ row, col, orientation });
 
-    if (!gameState.walls.has(wallKey)) {
-        gameState.walls.add(wallKey);
-        gameState.wallOwners.set(wallKey, gameState.currentPlayer);
+    if (gameState.walls.has(wallKey)) return; // Already exists
+    if (hasWallOverlap(row, col, orientation)) return; // Overlaps with existing wall
 
-        if (gameState.currentPlayer === 'p1') {
-            gameState.wallCounts.p1--;
-        } else {
-            gameState.wallCounts.p2--;
-        }
+    gameState.walls.add(wallKey);
+    gameState.wallOwners.set(wallKey, gameState.currentPlayer);
 
-        gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
-        updateWallCounts();
-        updateStatus();
-        updateLegalMoves();
+    if (gameState.currentPlayer === 'p1') {
+        gameState.wallCounts.p1--;
+    } else {
+        gameState.wallCounts.p2--;
     }
+
+    gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
+    updateWallCounts();
+    updateStatus();
+    updateLegalMoves();
+}
+
+function hasWallOverlap(row, col, orientation) {
+    const MAX_ANCHOR = BOARD_SIZE - 2;
+    if (row < 0 || row > MAX_ANCHOR || col < 0 || col > MAX_ANCHOR) return true;
+
+    if (orientation === 'H') {
+        // H wall can't have another H wall adjacent (col-1 or col+1)
+        if (hasWall('H', row, col - 1) || hasWall('H', row, col + 1)) return true;
+        // H wall can't cross a V wall at same anchor
+        if (hasWall('V', row, col)) return true;
+    } else {
+        // V wall can't have another V wall adjacent (row-1 or row+1)
+        if (hasWall('V', row - 1, col) || hasWall('V', row + 1, col)) return true;
+        // V wall can't cross an H wall at same anchor
+        if (hasWall('H', row, col)) return true;
+    }
+
+    return false;
 }
 
 function updateWallCounts() {
