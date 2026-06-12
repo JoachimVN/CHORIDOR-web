@@ -26,7 +26,7 @@ body {
 .top-bar {
     background: #13151F;
     border-bottom: 1px solid #1E2130;
-    padding: 14px 20px;
+    padding: 1.75vh 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -46,9 +46,9 @@ body {
 }
 
 .player-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 10px;
+    width: 1.25vh;
+    height: 1.25vh;
+    border-radius: 50%;
     flex-shrink: 0;
 }
 
@@ -62,7 +62,7 @@ body {
 
 .player-name {
     color: #8890A8;
-    font-size: 15px;
+    font-size: 1.85vh;
     font-weight: bold;
     white-space: nowrap;
 }
@@ -74,7 +74,7 @@ body {
 
 .wall-box {
     width: 8px;
-    height: 20px;
+    height: 2.5vh;
     border-radius: 2px;
     flex-shrink: 0;
 }
@@ -88,7 +88,7 @@ body {
 }
 
 .logo {
-    height: 48px;
+    height: 6vh;
     object-fit: contain;
 }
 
@@ -110,7 +110,7 @@ canvas {
 .bottom-bar {
     background: #13151F;
     border-top: 1px solid #1E2130;
-    padding: 14px 20px;
+    padding: 1.75vh 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -120,7 +120,7 @@ canvas {
 
 .status-label {
     color: #C8CCDC;
-    font-size: 16px;
+    font-size: 2vh;
     font-weight: bold;
 }
 
@@ -139,8 +139,8 @@ canvas {
 }
 
 button {
-    padding: 10px 22px;
-    font-size: 14px;
+    padding: 1.25vh 22px;
+    font-size: 1.75vh;
     border: 1px solid #2E3250;
     border-radius: 4px;
     cursor: pointer;
@@ -163,7 +163,7 @@ button:active {
 }
 
 .icon-btn {
-    padding: 5px 9px;
+    padding: 0.65vh 9px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -171,6 +171,8 @@ button:active {
 
 .icon-btn svg {
     color: #8890A8;
+    width: 2vh;
+    height: 2vh;
 }
 
 button:hover .icon-btn svg {

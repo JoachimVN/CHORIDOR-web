@@ -28,12 +28,13 @@ let gameState = {
 
 const canvas = document.getElementById('gameBoard');
 const ctx = canvas.getContext('2d');
-const dpr = window.devicePixelRatio || 1;
 let boardScale = 1;
 
 function resizeCanvas() {
-    const wrapper = canvas.parentElement;
-    const size = Math.min(wrapper.clientWidth, wrapper.clientHeight);
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const size = Math.min(rect.width, rect.height);
+    if (size <= 0) return;
     boardScale = size / BOARD_TOTAL;
     canvas.width = Math.round(size * dpr);
     canvas.height = Math.round(size * dpr);
@@ -468,10 +469,12 @@ document.getElementById('flip-btn').addEventListener('click', () => {
     render();
 });
 
-window.addEventListener('resize', () => { resizeCanvas(); render(); });
-
 buildWallBoxes();
 updateWallCounts();
 updateStatus();
-resizeCanvas();
-updateLegalMoves();
+
+requestAnimationFrame(() => {
+    resizeCanvas();
+    updateLegalMoves();
+    new ResizeObserver(() => { resizeCanvas(); render(); }).observe(canvas.parentElement);
+});
