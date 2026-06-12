@@ -72,10 +72,10 @@ function drawBoard() {
             // Draw goal strips
             const stripH = 3;
             if (r === 0) {
-                ctx.fillStyle = P2_STRIP;
+                ctx.fillStyle = P1_STRIP;
                 ctx.fillRect(x, y, CELL_SIZE, stripH);
             } else if (r === BOARD_SIZE - 1) {
-                ctx.fillStyle = P1_STRIP;
+                ctx.fillStyle = P2_STRIP;
                 ctx.fillRect(x, y + CELL_SIZE - stripH, CELL_SIZE, stripH);
             }
         }
