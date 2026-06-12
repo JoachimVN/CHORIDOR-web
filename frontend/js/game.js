@@ -10,9 +10,22 @@ const P1_COLOR = '#9E4A40';
 const P2_COLOR = '#3E68A8';
 const BG_COLOR = '#0F1117';
 const CELL_COLOR = '#191C2A';
-const WALL_USED_COLOR = '#404854';
+const WALL_USED_COLOR = '#252838';
 const P1_STRIP = 'rgba(158, 74, 64, 0.7)';
 const P2_STRIP = 'rgba(62, 104, 168, 0.7)';
+
+const sounds = {};
+['Move', 'Jump', 'Wall', 'Win', 'Loss', 'Select'].forEach(name => {
+    const a = new Audio(`audio/sfx/${name}.wav`);
+    a.preload = 'auto';
+    sounds[name] = a;
+});
+function playSound(name) {
+    const s = sounds[name];
+    if (!s) return;
+    s.currentTime = 0;
+    s.play().catch(() => {});
+}
 
 let gameState = {
     p1Pawn: { row: 8, col: 4 },
@@ -287,15 +300,19 @@ canvas.addEventListener('click', (e) => {
 function movePawn(row, col) {
     if (gameState.gameOver) return;
 
-    // Check if this is a legal move
     const isLegal = gameState.legalMoves.some(m => m.row === row && m.col === col);
     if (!isLegal) return;
+
+    const pawn = gameState.currentPlayer === 'p1' ? gameState.p1Pawn : gameState.p2Pawn;
+    const isJump = Math.abs(row - pawn.row) + Math.abs(col - pawn.col) > 1;
 
     if (gameState.currentPlayer === 'p1') {
         gameState.p1Pawn = { row, col };
     } else {
         gameState.p2Pawn = { row, col };
     }
+
+    playSound(isJump ? 'Jump' : 'Move');
 
     if (checkWin()) return;
 
@@ -329,6 +346,7 @@ function placeWall(row, col, orientation) {
         gameState.wallCounts.p2--;
     }
 
+    playSound('Wall');
     gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
     updateWallCounts();
     updateStatus();
@@ -436,6 +454,7 @@ function checkWin() {
 
 function showWinScreen(winner, playerClass) {
     gameState.gameOver = true;
+    playSound('Win');
     const overlay = document.getElementById('win-overlay');
     const message = document.getElementById('win-message');
     message.textContent = `${winner} Wins!`;
@@ -461,8 +480,8 @@ function resetGame() {
     updateLegalMoves();
 }
 
-document.getElementById('new-game-btn').addEventListener('click', resetGame);
-document.getElementById('play-again-btn').addEventListener('click', resetGame);
+document.getElementById('new-game-btn').addEventListener('click', () => { playSound('Select'); resetGame(); });
+document.getElementById('play-again-btn').addEventListener('click', () => { playSound('Select'); resetGame(); });
 
 document.getElementById('flip-btn').addEventListener('click', () => {
     gameState.flipped = !gameState.flipped;

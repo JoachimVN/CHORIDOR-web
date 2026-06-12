@@ -1,3 +1,10 @@
+@font-face {
+    font-family: 'AdlamDisplay';
+    src: url('../fonts/ADLAMDISPLAY-REGULAR.TTF') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -69,13 +76,13 @@ body {
 
 .wall-boxes {
     display: flex;
-    gap: 4px;
+    gap: 0.4vh;
 }
 
 .wall-box {
-    width: 8px;
-    height: 2.5vh;
-    border-radius: 2px;
+    width: 0.88vh;
+    height: 2.25vh;
+    border-radius: 0.25vh;
     flex-shrink: 0;
 }
 
@@ -84,7 +91,7 @@ body {
 }
 
 .wall-box.used {
-    background: #2A2E48;
+    background: #252838;
 }
 
 .logo {
