@@ -278,19 +278,18 @@ canvas.addEventListener('click', (e) => {
 });
 
 function movePawn(row, col) {
-    const pawn = gameState.currentPlayer === 'p1' ? gameState.p1Pawn : gameState.p2Pawn;
-    const distance = Math.abs(row - pawn.row) + Math.abs(col - pawn.col);
+    // Check if this is a legal move
+    const isLegal = gameState.legalMoves.some(m => m.row === row && m.col === col);
+    if (!isLegal) return;
 
-    if (distance === 1) {
-        if (gameState.currentPlayer === 'p1') {
-            gameState.p1Pawn = { row, col };
-        } else {
-            gameState.p2Pawn = { row, col };
-        }
-        gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
-        updateStatus();
-        updateLegalMoves();
+    if (gameState.currentPlayer === 'p1') {
+        gameState.p1Pawn = { row, col };
+    } else {
+        gameState.p2Pawn = { row, col };
     }
+    gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
+    updateStatus();
+    updateLegalMoves();
 }
 
 function placeWall(row, col, orientation) {
