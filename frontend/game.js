@@ -302,7 +302,13 @@ function placeWall(row, col, orientation) {
     if (gameState.walls.has(wallKey)) return; // Already exists
     if (hasWallOverlap(row, col, orientation)) return; // Overlaps with existing wall
 
+    // Test if wall blocks a player's path
     gameState.walls.add(wallKey);
+    if (!bothPlayersHavePath()) {
+        gameState.walls.delete(wallKey); // Revert if blocks path
+        return;
+    }
+
     gameState.wallOwners.set(wallKey, gameState.currentPlayer);
 
     if (gameState.currentPlayer === 'p1') {
@@ -331,6 +337,45 @@ function hasWallOverlap(row, col, orientation) {
         if (hasWall('V', row - 1, col) || hasWall('V', row + 1, col)) return true;
         // V wall can't cross an H wall at same anchor
         if (hasWall('H', row, col)) return true;
+    }
+
+    return false;
+}
+
+function bothPlayersHavePath() {
+    // P1 goal is row 0, P2 goal is row 8
+    return hasPathToGoal(gameState.p1Pawn, 0) && hasPathToGoal(gameState.p2Pawn, BOARD_SIZE - 1);
+}
+
+function hasPathToGoal(start, goalRow) {
+    const visited = new Set();
+    const queue = [start];
+    visited.add(`${start.row},${start.col}`);
+
+    while (queue.length > 0) {
+        const pos = queue.shift();
+
+        // Reached goal
+        if (pos.row === goalRow) return true;
+
+        // Check all 4 directions
+        const directions = [
+            { row: -1, col: 0 },
+            { row: 1, col: 0 },
+            { row: 0, col: -1 },
+            { row: 0, col: 1 }
+        ];
+
+        for (const dir of directions) {
+            const next = { row: pos.row + dir.row, col: pos.col + dir.col };
+            const key = `${next.row},${next.col}`;
+
+            if (next.row >= 0 && next.row < BOARD_SIZE && next.col >= 0 && next.col < BOARD_SIZE &&
+                !visited.has(key) && !isEdgeBlocked(pos, next)) {
+                visited.add(key);
+                queue.push(next);
+            }
+        }
     }
 
     return false;
