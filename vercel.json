@@ -1,6 +1,3 @@
 {
-    "outputDirectory": "frontend",
-    "rewrites": [
-        { "source": "/(.*)", "destination": "/$1" }
-    ]
+    "outputDirectory": "frontend"
 }
