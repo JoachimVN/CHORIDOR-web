@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHORIDOR - Online Multiplayer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>CHORIDOR</h1>
+
+        <div class="game-info">
+            <div class="player-info p1">
+                <span>Player 1</span>
+                <span id="p1-walls">Walls: 10</span>
+            </div>
+            <div class="player-info p2">
+                <span>Player 2</span>
+                <span id="p2-walls">Walls: 10</span>
+            </div>
+        </div>
+
+        <div class="board-container">
+            <canvas id="gameBoard" width="450" height="450"></canvas>
+        </div>
+
+        <div class="controls">
+            <button id="reset-btn">New Game</button>
+            <button id="mode-btn">Toggle Wall Placement</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

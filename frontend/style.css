@@ -1,0 +1,110 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #0F1117;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    background: #161B22;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    max-width: 700px;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    color: #C9D1D9;
+    margin-bottom: 30px;
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    padding: 15px;
+    background: #0D1117;
+    border-radius: 8px;
+    border: 1px solid #30363D;
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.player-info span:first-child {
+    font-weight: 600;
+    color: #C9D1D9;
+    font-size: 14px;
+}
+
+.player-info span:last-child {
+    font-size: 13px;
+    color: #8B949E;
+}
+
+.player-info.p1 span:first-child {
+    color: #9E4A40;
+}
+
+.player-info.p2 span:first-child {
+    color: #3E68A8;
+}
+
+.board-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+    background: transparent;
+}
+
+canvas {
+    display: block;
+    cursor: default;
+    background: #0F1117;
+    border-radius: 8px;
+}
+
+.controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+button {
+    padding: 10px 24px;
+    font-size: 14px;
+    border: 1px solid #30363D;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #0D1117;
+    color: #C9D1D9;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+button:hover {
+    background: #161B22;
+    border-color: #8B949E;
+}
+
+button:active {
+    transform: scale(0.98);
+}
