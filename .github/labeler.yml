@@ -1,0 +1,24 @@
+frontend:
+  - changed-files:
+    - any-glob-to-any-file: 'frontend/js/**'
+    - any-glob-to-any-file: 'frontend/css/**'
+    - any-glob-to-any-file: 'frontend/index.html'
+
+backend:
+  - changed-files:
+    - any-glob-to-any-file: 'backend/**'
+
+assets:
+  - changed-files:
+    - any-glob-to-any-file: 'frontend/audio/**'
+    - any-glob-to-any-file: 'frontend/fonts/**'
+    - any-glob-to-any-file: 'frontend/images/**'
+
+docs:
+  - changed-files:
+    - any-glob-to-any-file: '*.md'
+
+ci:
+  - changed-files:
+    - any-glob-to-any-file: '.github/**'
+    - any-glob-to-any-file: 'vercel.json'
