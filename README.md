@@ -28,18 +28,6 @@ The desktop version is available at [JoachimVN/CHORIDOR](https://github.com/Joac
     <em>In-game board</em>
 </p>
 
-<p align="center">
-    <img src="docs/screenshots/Lobby.png" alt="Mode selection lobby"/>
-    <br>
-    <em>Mode selection</em>
-</p>
-
-<p align="center">
-    <img src="docs/screenshots/WinScreen.png" alt="Win screen"/>
-    <br>
-    <em>Win screen</em>
-</p>
-
 ## Features
 
 - 9×9 board with full Quoridor rules — pawn moves, jump logic, wall placement, BFS path-check enforcement
