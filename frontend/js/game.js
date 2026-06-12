@@ -455,10 +455,16 @@ function checkWin() {
 function showWinScreen(winner, playerClass) {
     gameState.gameOver = true;
     playSound('Win');
+    document.getElementById('win-card').className    = `win-card ${playerClass}`;
+    document.getElementById('win-pawn').className    = `win-pawn ${playerClass}`;
+    const msg = document.getElementById('win-message');
+    msg.textContent = `${winner} Wins!`;
+    msg.className   = `win-title ${playerClass}`;
     const overlay = document.getElementById('win-overlay');
-    const message = document.getElementById('win-message');
-    message.textContent = `${winner} Wins!`;
-    message.className = `win-text ${playerClass}`;
+    const card = document.getElementById('win-card');
+    card.style.animation = 'none';
+    card.offsetHeight; // reflow
+    card.style.animation = '';
     overlay.classList.remove('hidden');
 }
 
