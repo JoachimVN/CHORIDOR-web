@@ -13,7 +13,7 @@ const rooms = new Map();
 
 function makeCode() {
     let code;
-    do { code = Math.random().toString(36).slice(2, 8).toUpperCase(); }
+    do { code = Math.random().toString(36).slice(2, 5).toUpperCase(); }
     while (rooms.has(code));
     return code;
 }

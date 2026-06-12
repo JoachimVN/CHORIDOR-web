@@ -26,7 +26,10 @@ const sounds = {};
     sounds[name] = a;
 });
 
+let muted = false;
+
 function playSound(name) {
+    if (muted) return;
     const s = sounds[name];
     if (!s) return;
     s.currentTime = 0;
@@ -410,9 +413,29 @@ function resetGame() {
 
 function initSocket(errorElId, callback) {
     if (socket?.connected) { callback(); return; }
+    if (socket) { socket.disconnect(); socket = null; }
+
     socket = io(BACKEND_URL, { transports: ['websocket', 'polling'] });
 
-    socket.on('connect_error', () => showLobbyError(errorElId, 'Could not connect to server'));
+    const timeout = setTimeout(() => {
+        if (!socket?.connected) {
+            showLobbyError(errorElId, 'Could not connect to server');
+            socket?.disconnect();
+            socket = null;
+        }
+    }, 4000);
+
+    socket.once('connect', () => {
+        clearTimeout(timeout);
+        callback();
+    });
+
+    socket.on('connect_error', () => {
+        clearTimeout(timeout);
+        showLobbyError(errorElId, 'Could not connect to server');
+        socket?.disconnect();
+        socket = null;
+    });
 
     socket.on('room-created', ({ code }) => {
         onlineRole = 'p1';
@@ -538,6 +561,27 @@ document.getElementById('new-game-btn').addEventListener('click', () => {
 document.getElementById('flip-btn').addEventListener('click', () => {
     gameState.flipped = !gameState.flipped;
     render();
+});
+
+document.getElementById('mute-btn').addEventListener('click', () => {
+    muted = !muted;
+    document.getElementById('mute-icon').innerHTML = muted
+        ? `<path d="M11 5 6 9H2v6h4l5 4V5z"/>
+           <line x1="23" y1="9" x2="17" y2="15"/>
+           <line x1="17" y1="9" x2="23" y2="15"/>`
+        : `<path d="M11 5 6 9H2v6h4l5 4V5z"/>
+           <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+           <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>`;
+});
+
+document.getElementById('change-mode-btn').addEventListener('click', () => {
+    playSound('Select');
+    onlineMode = false; onlineRole = null;
+    socket?.disconnect(); socket = null;
+    document.getElementById('win-overlay').classList.add('hidden');
+    document.getElementById('lobby-overlay').classList.remove('hidden');
+    showLobbyView('lview-mode');
+    resetGame();
 });
 
 // ─── Init ─────────────────────────────────────────────────────────────────
