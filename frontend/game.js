@@ -10,6 +10,7 @@ const P1_COLOR = '#9E4A40';
 const P2_COLOR = '#3E68A8';
 const BG_COLOR = '#0F1117';
 const CELL_COLOR = '#191C2A';
+const WALL_USED_COLOR = '#404854';
 const P1_STRIP = 'rgba(158, 74, 64, 0.7)';
 const P2_STRIP = 'rgba(62, 104, 168, 0.7)';
 
@@ -20,7 +21,8 @@ let gameState = {
     wallOwners: new Map(),
     wallCounts: { p1: WALLS_PER_PLAYER, p2: WALLS_PER_PLAYER },
     currentPlayer: 'p1',
-    legalMoves: []
+    legalMoves: [],
+    flipped: false
 };
 
 const canvas = document.getElementById('gameBoard');
@@ -29,6 +31,29 @@ const ctx = canvas.getContext('2d');
 // Set canvas size
 canvas.width = BOARD_TOTAL;
 canvas.height = BOARD_TOTAL;
+
+// Build wall boxes for both players
+function buildWallBoxes() {
+    const p1Container = document.getElementById('p1-walls');
+    const p2Container = document.getElementById('p2-walls');
+
+    p1Container.innerHTML = '';
+    p2Container.innerHTML = '';
+
+    for (let i = 0; i < WALLS_PER_PLAYER; i++) {
+        const box1 = document.createElement('div');
+        box1.className = 'wall-box active';
+        box1.style.background = P1_COLOR;
+        box1.id = `p1-wall-${i}`;
+        p1Container.appendChild(box1);
+
+        const box2 = document.createElement('div');
+        box2.className = 'wall-box active';
+        box2.style.background = P2_COLOR;
+        box2.id = `p2-wall-${i}`;
+        p2Container.appendChild(box2);
+    }
+}
 
 function drawBoard() {
     ctx.fillStyle = BG_COLOR;
@@ -117,17 +142,31 @@ function drawPawns() {
 }
 
 function render() {
+    const s = canvas.width / BOARD_TOTAL;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    if (gameState.flipped) {
+        ctx.save();
+        ctx.translate(w, h);
+        ctx.scale(-1, -1);
+    }
+
     drawBoard();
     drawWalls();
     drawLegalMoves();
     drawPawns();
+
+    if (gameState.flipped) {
+        ctx.restore();
+    }
 }
 
 function updateLegalMoves() {
     gameState.legalMoves = [];
     const pawn = gameState.currentPlayer === 'p1' ? gameState.p1Pawn : gameState.p2Pawn;
+    const opp = gameState.currentPlayer === 'p1' ? gameState.p2Pawn : gameState.p1Pawn;
 
-    // Check all 4 directions
     const directions = [
         { row: -1, col: 0 },
         { row: 1, col: 0 },
@@ -136,22 +175,88 @@ function updateLegalMoves() {
     ];
 
     directions.forEach(dir => {
-        const newRow = pawn.row + dir.row;
-        const newCol = pawn.col + dir.col;
+        const neighbor = { row: pawn.row + dir.row, col: pawn.col + dir.col };
 
-        if (newRow >= 0 && newRow < BOARD_SIZE && newCol >= 0 && newCol < BOARD_SIZE) {
-            // Simple check: not blocked by wall (simplified for now)
-            gameState.legalMoves.push({ row: newRow, col: newCol });
+        // Out of bounds
+        if (neighbor.row < 0 || neighbor.row >= BOARD_SIZE || neighbor.col < 0 || neighbor.col >= BOARD_SIZE) {
+            return;
+        }
+
+        // Wall blocking this edge
+        if (isEdgeBlocked(pawn, neighbor)) {
+            return;
+        }
+
+        // Empty cell
+        if (!isSamePos(neighbor, opp)) {
+            gameState.legalMoves.push(neighbor);
+            render();
+            return;
+        }
+
+        // Opponent adjacent — try to jump
+        const straight = { row: neighbor.row + dir.row, col: neighbor.col + dir.col };
+        if (straight.row >= 0 && straight.row < BOARD_SIZE && straight.col >= 0 && straight.col < BOARD_SIZE &&
+            !isEdgeBlocked(neighbor, straight)) {
+            gameState.legalMoves.push(straight);
+        } else {
+            // Straight blocked — try diagonals
+            const perps = [
+                { row: dir.col, col: -dir.row },
+                { row: -dir.col, col: dir.row }
+            ];
+            perps.forEach(perp => {
+                const diag = { row: neighbor.row + perp.row, col: neighbor.col + perp.col };
+                if (diag.row >= 0 && diag.row < BOARD_SIZE && diag.col >= 0 && diag.col < BOARD_SIZE &&
+                    !isEdgeBlocked(neighbor, diag)) {
+                    gameState.legalMoves.push(diag);
+                }
+            });
         }
     });
 
     render();
 }
 
+function isSamePos(a, b) {
+    return a.row === b.row && a.col === b.col;
+}
+
+function isEdgeBlocked(from, to) {
+    const dr = to.row - from.row;
+    const dc = to.col - from.col;
+
+    if (Math.abs(dr) + Math.abs(dc) !== 1) return false;
+
+    if (dc === 0) {
+        // Vertical movement — check for horizontal walls
+        const edgeRow = Math.min(from.row, to.row);
+        return hasWall('H', edgeRow, from.col) || hasWall('H', edgeRow, from.col - 1);
+    }
+
+    if (dr === 0) {
+        // Horizontal movement — check for vertical walls
+        const edgeCol = Math.min(from.col, to.col);
+        return hasWall('V', from.row, edgeCol) || hasWall('V', from.row - 1, edgeCol);
+    }
+
+    return false;
+}
+
+function hasWall(orientation, row, col) {
+    const wallKey = JSON.stringify({ row, col, orientation });
+    return gameState.walls.has(wallKey);
+}
+
 canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    let x = e.clientX - rect.left;
+    let y = e.clientY - rect.top;
+
+    if (gameState.flipped) {
+        x = canvas.width - x;
+        y = canvas.height - y;
+    }
 
     // Determine if click is in cell or gap
     const cellX = Math.floor(x / STEP);
@@ -183,6 +288,7 @@ function movePawn(row, col) {
             gameState.p2Pawn = { row, col };
         }
         gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
+        updateStatus();
         updateLegalMoves();
     }
 }
@@ -205,16 +311,41 @@ function placeWall(row, col, orientation) {
 
         gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
         updateWallCounts();
+        updateStatus();
         updateLegalMoves();
     }
 }
 
 function updateWallCounts() {
-    document.getElementById('p1-walls').textContent = `Walls: ${gameState.wallCounts.p1}`;
-    document.getElementById('p2-walls').textContent = `Walls: ${gameState.wallCounts.p2}`;
+    for (let i = 0; i < WALLS_PER_PLAYER; i++) {
+        const p1Box = document.getElementById(`p1-wall-${i}`);
+        const p2Box = document.getElementById(`p2-wall-${i}`);
+
+        if (i < gameState.wallCounts.p1) {
+            p1Box.className = 'wall-box active';
+            p1Box.style.background = P1_COLOR;
+        } else {
+            p1Box.className = 'wall-box used';
+            p1Box.style.background = WALL_USED_COLOR;
+        }
+
+        if (i < gameState.wallCounts.p2) {
+            p2Box.className = 'wall-box active';
+            p2Box.style.background = P2_COLOR;
+        } else {
+            p2Box.className = 'wall-box used';
+            p2Box.style.background = WALL_USED_COLOR;
+        }
+    }
 }
 
-document.getElementById('reset-btn').addEventListener('click', () => {
+function updateStatus() {
+    const status = document.getElementById('status');
+    status.textContent = `${gameState.currentPlayer === 'p1' ? 'Player 1' : 'Player 2'}'s Turn`;
+    status.className = `status-label ${gameState.currentPlayer === 'p1' ? 'p1' : 'p2'}`;
+}
+
+document.getElementById('new-game-btn').addEventListener('click', () => {
     gameState = {
         p1Pawn: { row: 8, col: 4 },
         p2Pawn: { row: 0, col: 4 },
@@ -222,14 +353,20 @@ document.getElementById('reset-btn').addEventListener('click', () => {
         wallOwners: new Map(),
         wallCounts: { p1: WALLS_PER_PLAYER, p2: WALLS_PER_PLAYER },
         currentPlayer: 'p1',
-        legalMoves: []
+        legalMoves: [],
+        flipped: gameState.flipped
     };
     updateWallCounts();
+    updateStatus();
     updateLegalMoves();
 });
 
-document.getElementById('mode-btn').addEventListener('click', () => {
-    alert('Wall placement is automatic — click in gaps to place walls. Click in cells to move pawns.');
+document.getElementById('flip-btn').addEventListener('click', () => {
+    gameState.flipped = !gameState.flipped;
+    render();
 });
 
+buildWallBoxes();
+updateWallCounts();
+updateStatus();
 updateLegalMoves();
