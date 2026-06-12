@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check frontend JS syntax
+        run: node --check frontend/js/game.js
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Check backend JS syntax
+        run: node --check server.js
+        working-directory: backend
