@@ -13,7 +13,7 @@ const WALL_USED_COLOR = '#252838';
 const P1_STRIP       = 'rgba(158, 74, 64, 0.7)';
 const P2_STRIP       = 'rgba(62, 104, 168, 0.7)';
 
-const BACKEND_URL = location.hostname === 'localhost'
+const BACKEND_URL = ['localhost', '127.0.0.1'].includes(location.hostname)
     ? 'http://localhost:3001'
     : 'https://your-railway-url.up.railway.app'; // update after deploying backend
 

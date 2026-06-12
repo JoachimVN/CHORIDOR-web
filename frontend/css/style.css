@@ -11,6 +11,8 @@
     box-sizing: border-box;
 }
 
+.hidden { display: none !important; }
+
 body {
     font-family: System, -apple-system, sans-serif;
     background: #0F1117;
