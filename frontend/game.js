@@ -22,7 +22,8 @@ let gameState = {
     wallCounts: { p1: WALLS_PER_PLAYER, p2: WALLS_PER_PLAYER },
     currentPlayer: 'p1',
     legalMoves: [],
-    flipped: false
+    flipped: false,
+    gameOver: false
 };
 
 const canvas = document.getElementById('gameBoard');
@@ -278,6 +279,8 @@ canvas.addEventListener('click', (e) => {
 });
 
 function movePawn(row, col) {
+    if (gameState.gameOver) return;
+
     // Check if this is a legal move
     const isLegal = gameState.legalMoves.some(m => m.row === row && m.col === col);
     if (!isLegal) return;
@@ -287,12 +290,16 @@ function movePawn(row, col) {
     } else {
         gameState.p2Pawn = { row, col };
     }
+
+    if (checkWin()) return;
+
     gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
     updateStatus();
     updateLegalMoves();
 }
 
 function placeWall(row, col, orientation) {
+    if (gameState.gameOver) return;
     if (gameState.currentPlayer === 'p1' && gameState.wallCounts.p1 === 0) return;
     if (gameState.currentPlayer === 'p2' && gameState.wallCounts.p2 === 0) return;
 
@@ -409,7 +416,28 @@ function updateStatus() {
     status.className = `status-label ${gameState.currentPlayer === 'p1' ? 'p1' : 'p2'}`;
 }
 
-document.getElementById('new-game-btn').addEventListener('click', () => {
+function checkWin() {
+    if (gameState.p1Pawn.row === 0) {
+        showWinScreen('Player 1', 'p1');
+        return true;
+    }
+    if (gameState.p2Pawn.row === BOARD_SIZE - 1) {
+        showWinScreen('Player 2', 'p2');
+        return true;
+    }
+    return false;
+}
+
+function showWinScreen(winner, playerClass) {
+    gameState.gameOver = true;
+    const overlay = document.getElementById('win-overlay');
+    const message = document.getElementById('win-message');
+    message.textContent = `${winner} Wins!`;
+    message.className = `win-text ${playerClass}`;
+    overlay.classList.remove('hidden');
+}
+
+function resetGame() {
     gameState = {
         p1Pawn: { row: 8, col: 4 },
         p2Pawn: { row: 0, col: 4 },
@@ -418,12 +446,17 @@ document.getElementById('new-game-btn').addEventListener('click', () => {
         wallCounts: { p1: WALLS_PER_PLAYER, p2: WALLS_PER_PLAYER },
         currentPlayer: 'p1',
         legalMoves: [],
-        flipped: gameState.flipped
+        flipped: gameState.flipped,
+        gameOver: false
     };
+    document.getElementById('win-overlay').classList.add('hidden');
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
-});
+}
+
+document.getElementById('new-game-btn').addEventListener('click', resetGame);
+document.getElementById('play-again-btn').addEventListener('click', resetGame);
 
 document.getElementById('flip-btn').addEventListener('click', () => {
     gameState.flipped = !gameState.flipped;
