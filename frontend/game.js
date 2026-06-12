@@ -28,14 +28,19 @@ let gameState = {
 
 const canvas = document.getElementById('gameBoard');
 const ctx = canvas.getContext('2d');
-
-// Set canvas size with device pixel ratio for sharp rendering
 const dpr = window.devicePixelRatio || 1;
-canvas.width = BOARD_TOTAL * dpr;
-canvas.height = BOARD_TOTAL * dpr;
-canvas.style.width = BOARD_TOTAL + 'px';
-canvas.style.height = BOARD_TOTAL + 'px';
-ctx.scale(dpr, dpr);
+let boardScale = 1;
+
+function resizeCanvas() {
+    const wrapper = canvas.parentElement;
+    const size = Math.min(wrapper.clientWidth, wrapper.clientHeight);
+    boardScale = size / BOARD_TOTAL;
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    canvas.style.width = size + 'px';
+    canvas.style.height = size + 'px';
+    ctx.setTransform(boardScale * dpr, 0, 0, boardScale * dpr, 0, 0);
+}
 
 // Build wall boxes for both players
 function buildWallBoxes() {
@@ -62,7 +67,7 @@ function buildWallBoxes() {
 
 function drawBoard() {
     ctx.fillStyle = BG_COLOR;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, BOARD_TOTAL, BOARD_TOTAL);
 
     // Draw cells with gaps
     for (let r = 0; r < BOARD_SIZE; r++) {
@@ -147,13 +152,9 @@ function drawPawns() {
 }
 
 function render() {
-    const s = canvas.width / BOARD_TOTAL;
-    const w = canvas.width;
-    const h = canvas.height;
-
     if (gameState.flipped) {
         ctx.save();
-        ctx.translate(w, h);
+        ctx.translate(BOARD_TOTAL, BOARD_TOTAL);
         ctx.scale(-1, -1);
     }
 
@@ -255,12 +256,12 @@ function hasWall(orientation, row, col) {
 
 canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
+    let x = (e.clientX - rect.left) / boardScale;
+    let y = (e.clientY - rect.top) / boardScale;
 
     if (gameState.flipped) {
-        x = canvas.width - x;
-        y = canvas.height - y;
+        x = BOARD_TOTAL - x;
+        y = BOARD_TOTAL - y;
     }
 
     // Determine if click is in cell or gap
@@ -467,7 +468,10 @@ document.getElementById('flip-btn').addEventListener('click', () => {
     render();
 });
 
+window.addEventListener('resize', () => { resizeCanvas(); render(); });
+
 buildWallBoxes();
 updateWallCounts();
 updateStatus();
+resizeCanvas();
 updateLegalMoves();
