@@ -29,9 +29,13 @@ let gameState = {
 const canvas = document.getElementById('gameBoard');
 const ctx = canvas.getContext('2d');
 
-// Set canvas size
-canvas.width = BOARD_TOTAL;
-canvas.height = BOARD_TOTAL;
+// Set canvas size with device pixel ratio for sharp rendering
+const dpr = window.devicePixelRatio || 1;
+canvas.width = BOARD_TOTAL * dpr;
+canvas.height = BOARD_TOTAL * dpr;
+canvas.style.width = BOARD_TOTAL + 'px';
+canvas.style.height = BOARD_TOTAL + 'px';
+ctx.scale(dpr, dpr);
 
 // Build wall boxes for both players
 function buildWallBoxes() {
