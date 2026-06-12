@@ -1,0 +1,31 @@
+name: Sync to Portfolio
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone portfolio repo
+        run: git clone https://x-access-token:${{ secrets.PORTFOLIO_TOKEN }}@github.com/JoachimVN/JoachimVN.github.io.git portfolio
+
+      - name: Sync frontend -> choridor/
+        run: |
+          rm -rf portfolio/choridor
+          cp -r frontend portfolio/choridor
+
+      - name: Commit and push
+        run: |
+          cd portfolio
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add choridor/
+          git diff --staged --quiet || git commit -m "chore: sync CHORIDOR from CHORIDOR-web@${{ github.sha }}"
+          git push
