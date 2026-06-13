@@ -311,6 +311,15 @@ button:active {
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.35);
 }
 
+/* Animations toggle, dimmed with a slashed icon when off */
+.icon-btn.anim-off {
+    opacity: 0.5;
+}
+
+.icon-btn.anim-off:hover {
+    opacity: 0.8;
+}
+
 /* Mute, red tint while muted */
 #mute-btn.muted {
     color: #E0998C;

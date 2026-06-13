@@ -65,6 +65,7 @@ let tapPreview = null;  // { row, col, orientation } | null while awaiting confi
 let pawnAnims  = [];    // active pawn slide / jump animations
 let wallAnims  = [];    // active wall grow-in animations
 let _animId    = null;  // shared rAF id driving all board animations
+let animEnabled = true;  // master motion toggle (set from storage at init)
 
 const PAWN_MOVE_MS  = 200;
 const PAWN_JUMP_MS  = 300;
@@ -289,12 +290,12 @@ function drawTapPreview(color) {
     if (gameState.walls.has(wallKey) || hasWallOverlap(row, col, orientation)) return;
 
     const now  = performance.now();
-    const grow = easeOutBack(Math.min((now - t0) / 240, 1));
-    const wave = Math.sin(now * 0.005);
+    const grow = animEnabled ? easeOutBack(Math.min((now - t0) / 240, 1)) : 1;
+    const wave = animEnabled ? Math.sin(now * 0.005) : 0;
 
     ctx.save();
     ctx.shadowColor = color;
-    ctx.shadowBlur  = 12 + wave * 5;
+    ctx.shadowBlur  = 10 + wave * 4;
     ctx.fillStyle   = color;
     ctx.globalAlpha = 0.66 + wave * 0.14;
     fillWall(row, col, orientation, grow);
@@ -434,7 +435,7 @@ function handleTapWall(row, col, orientation) {
         if (!wallKeepsPathsOpen(wallKey)) return;
         tapPreview = { row, col, orientation, t0: performance.now() };
         playSound('Select');
-        ensureAnimLoop();
+        if (animEnabled) ensureAnimLoop(); else render();
         updateTapHint();
     }
 }
@@ -510,6 +511,7 @@ function ensureAnimLoop() {
 }
 
 function startPawnAnim(player, from, to, isJump) {
+    if (!animEnabled) return;   // state is already updated; a normal render shows it
     pawnAnims = pawnAnims.filter(a => a.player !== player);
     pawnAnims.push({
         player, isJump,
@@ -521,6 +523,7 @@ function startPawnAnim(player, from, to, isJump) {
 }
 
 function startWallAnim(wallKey) {
+    if (!animEnabled) return;
     wallAnims.push({ wallKey, t0: performance.now(), dur: WALL_PLACE_MS });
     ensureAnimLoop();
 }
@@ -567,8 +570,34 @@ function setTapMode(enabled) {
         btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
     }
     if (!enabled) clearTapPreview();
-    showToast(enabled ? 'Confirm walls: ON — pick a slot, then confirm' : 'Confirm walls: OFF');
+    showToast(enabled ? 'Confirm walls: ON, pick a slot then confirm' : 'Confirm walls: OFF');
     render();
+}
+
+const ANIM_ICON_ON = `<path d="M12 3.2l1.7 4.9 4.9 1.7-4.9 1.7L12 16.4l-1.7-4.9L5.4 9.8l4.9-1.7L12 3.2z"/>
+                      <path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/>`;
+const ANIM_ICON_OFF = ANIM_ICON_ON + `<line x1="3" y1="3" x2="21" y2="21"/>`;
+
+function setAnimEnabled(on, silent = false) {
+    animEnabled = on;
+    localStorage.setItem('choridor_anim', on ? '1' : '0');
+    const btn  = document.getElementById('anim-btn');
+    const icon = document.getElementById('anim-icon');
+    if (btn) {
+        btn.classList.toggle('anim-off', !on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btn.setAttribute('aria-label', on ? 'Turn animations off' : 'Turn animations on');
+    }
+    if (icon) icon.innerHTML = on ? ANIM_ICON_ON : ANIM_ICON_OFF;
+    if (!on) {
+        pawnAnims = [];
+        wallAnims = [];
+        if (_animId) { cancelAnimationFrame(_animId); _animId = null; }
+    } else if (tapPreview) {
+        ensureAnimLoop();
+    }
+    render();
+    if (!silent) showToast(on ? 'Animations: ON' : 'Animations: OFF');
 }
 
 // ─── Moves ────────────────────────────────────────────────────────────────
@@ -587,7 +616,7 @@ function movePawn(row, col) {
     playSound(isJump ? 'Jump' : 'Move');
     if (socket && onlineMode) socket.emit('move', { type: 'pawn', row, col });
     startPawnAnim(mover, from, { row, col }, isJump);
-    if (checkWin(isJump ? PAWN_JUMP_MS : PAWN_MOVE_MS)) return;
+    if (checkWin(animEnabled ? (isJump ? PAWN_JUMP_MS : PAWN_MOVE_MS) : 0)) return;
     gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateStatus();
     updateLegalMoves();
@@ -628,7 +657,7 @@ function applyOpponentPawnMove(data) {
     else                gameState.p2Pawn = { row: data.row, col: data.col };
     playSound(isJump ? 'Jump' : 'Move');
     startPawnAnim(mover, from, { row: data.row, col: data.col }, isJump);
-    if (checkWin(isJump ? PAWN_JUMP_MS : PAWN_MOVE_MS)) return;
+    if (checkWin(animEnabled ? (isJump ? PAWN_JUMP_MS : PAWN_MOVE_MS) : 0)) return;
     gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateStatus();
     updateLegalMoves();
@@ -707,6 +736,7 @@ function updateWallCounts() {
 
 // Animate the just-spent wall box (call after the count has been decremented)
 function animateWallSpend(player) {
+    if (!animEnabled) return;   // updateWallCounts will flip it to "used" instantly
     const idx = gameState.wallCounts[player];   // the box that just flipped to "used"
     const box = document.getElementById(`${player}-wall-${idx}`);
     if (!box) return;
@@ -1175,9 +1205,11 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
 
 document.getElementById('new-game-btn').addEventListener('click', () => {
     playSound('Select');
-    newGameIconDeg += 360;
-    const ngIcon = document.querySelector('#new-game-btn svg');
-    if (ngIcon) ngIcon.style.transform = `rotate(${newGameIconDeg}deg)`;
+    if (animEnabled) {
+        newGameIconDeg += 360;
+        const ngIcon = document.querySelector('#new-game-btn svg');
+        if (ngIcon) ngIcon.style.transform = `rotate(${newGameIconDeg}deg)`;
+    }
     if (onlineMode) {
         onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
         socket?.disconnect(); socket = null;
@@ -1193,18 +1225,18 @@ document.getElementById('flip-btn').addEventListener('click', () => {
     flipAnimating = true;
     playSound('Select');
 
-    // Spin the icon a half-turn each press, in sync with the board
-    flipIconDeg += 180;
-    const icon = document.querySelector('#flip-btn svg');
-    if (icon) icon.style.transform = `rotate(${flipIconDeg}deg)`;
-
-    const reduce = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduce = !animEnabled || globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce) {
         gameState.flipped = !gameState.flipped;
         render();
         flipAnimating = false;
         return;
     }
+
+    // Spin the icon a half-turn each press, in sync with the board
+    flipIconDeg += 180;
+    const icon = document.querySelector('#flip-btn svg');
+    if (icon) icon.style.transform = `rotate(${flipIconDeg}deg)`;
 
     // 3D flip: rotate edge-on, swap orientation while hidden, rotate back in
     const HALF = 210;
@@ -1234,6 +1266,11 @@ document.getElementById('tap-mode-btn').addEventListener('click', () => {
     setTapMode(!tapMode);
 });
 
+document.getElementById('anim-btn').addEventListener('click', () => {
+    playSound('Select');
+    setAnimEnabled(!animEnabled);
+});
+
 document.getElementById('mute-btn').addEventListener('click', () => {
     muted = !muted;
     const btn  = document.getElementById('mute-btn');
@@ -1246,16 +1283,18 @@ document.getElementById('mute-btn').addEventListener('click', () => {
         : `<path d="M11 5 6 9H2v6h4l5 4V5z"/>
            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>`;
-    // Re-trigger the pop animation
-    icon.style.animation = 'none';
-    void icon.offsetWidth;
-    icon.style.animation = 'mute-pop 0.32s ease';
+    if (animEnabled) {
+        // Re-trigger the pop animation
+        icon.style.animation = 'none';
+        void icon.offsetWidth;
+        icon.style.animation = 'mute-pop 0.32s ease';
+    }
 });
 
 document.getElementById('change-mode-btn').addEventListener('click', () => {
     playSound('Select');
     const cmIcon = document.querySelector('#change-mode-btn svg');
-    if (cmIcon) {
+    if (animEnabled && cmIcon) {
         cmIcon.style.animation = 'none';
         void cmIcon.offsetWidth;
         cmIcon.style.animation = 'ctrl-icon-pop 0.34s ease';
@@ -1340,6 +1379,13 @@ buildWallBoxes();
 updateWallCounts();
 updateStatus();
 
+// Animations: default on, but respect a saved choice or the OS reduced-motion setting
+{
+    const saved  = localStorage.getItem('choridor_anim');
+    const reduce = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setAnimEnabled(saved === null ? !reduce : saved === '1', true);
+}
+
 // Auto-enable tap mode on touch-primary devices (no hover, coarse pointer)
 {
     const saved     = localStorage.getItem('choridor_tap_mode');
@@ -1352,7 +1398,7 @@ updateStatus();
         // First-time touch users: a one-off nudge so the flow is discoverable
         if (saved === null && autoTouch && !localStorage.getItem('choridor_tap_hint_seen')) {
             localStorage.setItem('choridor_tap_hint_seen', '1');
-            setTimeout(() => showToast('Confirm walls is on — pick a slot, then confirm'), 800);
+            setTimeout(() => showToast('Confirm walls is on, pick a slot then confirm'), 800);
         }
     }
 }
