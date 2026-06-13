@@ -319,13 +319,14 @@ button:active {
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.35);
 }
 
-/* Animations off: dimmed with a slashed icon, brightening on hover */
-.icon-btn.anim-off {
-    opacity: 0.5;
+/* Animations off: a normal clickable button; the slashed icon conveys the
+   off state, so it isn't dimmed (which would read as disabled) */
+.icon-btn.anim-off svg {
+    color: #9AA2BE;
 }
 
-.icon-btn.anim-off:hover {
-    opacity: 0.85;
+.icon-btn.anim-off:hover svg {
+    color: #EAEDF6;
 }
 
 /* Mute, red tint while muted, with a brighter hover (solid colours for the

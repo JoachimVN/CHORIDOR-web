@@ -1300,6 +1300,7 @@ document.getElementById('mute-btn').addEventListener('click', () => {
         icon.getBoundingClientRect();
         icon.style.animation = 'mute-pop 0.32s ease';
     }
+    showToast(muted ? 'Sound effects: OFF' : 'Sound effects: ON');
 });
 
 document.getElementById('change-mode-btn').addEventListener('click', () => {
