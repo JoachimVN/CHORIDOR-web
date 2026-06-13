@@ -1,7 +1,7 @@
 const express  = require('express');
-const { createServer } = require('http');
+const { createServer } = require('node:http');
 const { Server }       = require('socket.io');
-const path     = require('path');
+const path     = require('node:path');
 
 const app  = express();
 const http = createServer(app);
@@ -25,13 +25,11 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 
 io.on('connection', socket => {
     let roomCode = null;
-    let role     = null;
 
     socket.on('create-room', () => {
         const code = makeCode();
         rooms.set(code, { p1: socket.id, p2: null });
         roomCode = code;
-        role     = 'p1';
         socket.join(code);
         socket.emit('room-created', { code, role: 'p1' });
         console.log(`Room ${code} created by ${socket.id}`);
@@ -44,7 +42,6 @@ io.on('connection', socket => {
         if (room.p2)  { socket.emit('room-error', 'Room is full');   return; }
         room.p2  = socket.id;
         roomCode = code;
-        role     = 'p2';
         socket.join(code);
         socket.emit('room-joined', { code, role: 'p2' });
         io.to(code).emit('game-start', { code });
