@@ -50,6 +50,17 @@
         li { margin-bottom: 4px; }
         a { color: #3E68A8; text-decoration: none; }
         a:hover { text-decoration: underline; }
+        .back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #454A68;
+            font-size: 13px;
+            text-decoration: none;
+            margin-bottom: 28px;
+            transition: color 0.15s;
+        }
+        .back:hover { color: #8890A8; text-decoration: none; }
         .divider {
             border: none;
             border-top: 1px solid #1E2130;
@@ -62,6 +73,7 @@
 </head>
 <body>
     <div class="card">
+        <a href="javascript:history.back()" class="back">← Back</a>
         <h1>Terms of Service</h1>
         <p class="meta">CHORIDOR &nbsp;·&nbsp; Last updated June 13, 2026</p>
 

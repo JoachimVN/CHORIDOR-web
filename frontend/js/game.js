@@ -571,8 +571,26 @@ function initSocket(errorElId, callback) {
 // ─── Online: lobby UI ─────────────────────────────────────────────────────
 
 function showLobbyView(id) {
-    document.querySelectorAll('.lobby-view').forEach(v => v.classList.add('hidden'));
-    document.getElementById(id).classList.remove('hidden');
+    const current = [...document.querySelectorAll('.lobby-view')].find(v => !v.classList.contains('hidden'));
+    const next = document.getElementById(id);
+    if (current === next) return;
+
+    if (current) {
+        current.style.opacity = '0';
+        current.style.transform = 'translateY(-6px)';
+        current.style.transition = 'opacity 0.13s ease, transform 0.13s ease';
+        setTimeout(() => {
+            current.classList.add('hidden');
+            current.style.cssText = '';
+            next.classList.remove('hidden');
+            next.classList.add('lobby-view-entering');
+            setTimeout(() => next.classList.remove('lobby-view-entering'), 240);
+        }, 130);
+    } else {
+        next.classList.remove('hidden');
+        next.classList.add('lobby-view-entering');
+        setTimeout(() => next.classList.remove('lobby-view-entering'), 240);
+    }
 }
 
 function hideLobby() {
@@ -618,6 +636,17 @@ nameInput?.addEventListener('input', () => {
     else localStorage.removeItem('choridor_player_name');
     if (!onlineMode) applyPlayerNames();
 });
+
+const joinNameInput = document.getElementById('join-player-name-input');
+if (joinNameInput) {
+    joinNameInput.value = savedName;
+    joinNameInput.addEventListener('input', () => {
+        const val = joinNameInput.value.trim();
+        if (val) localStorage.setItem('choridor_player_name', val);
+        else localStorage.removeItem('choridor_player_name');
+        if (nameInput) nameInput.value = joinNameInput.value;
+    });
+}
 
 applyPlayerNames();
 
