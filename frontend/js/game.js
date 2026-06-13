@@ -62,7 +62,9 @@ let hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow:
 
 let tapMode    = false;
 let tapPreview = null;  // { row, col, orientation } | null while awaiting confirm
-let _tapAnimId = null;
+let pawnAnims  = [];    // active pawn slide / jump animations
+let wallAnims  = [];    // active wall grow-in animations
+let _animId    = null;  // shared rAF id driving all board animations
 
 // ─── Control-button animation state ───────────────────────────────────────
 
@@ -148,16 +150,24 @@ function drawBoard() {
 }
 
 function drawWalls() {
+    const now = performance.now();
     gameState.walls.forEach(wallKey => {
         const wall  = JSON.parse(wallKey);
         const owner = gameState.wallOwners.get(wallKey);
-        ctx.fillStyle = owner === 'p1' ? P1_COLOR : P2_COLOR;
-        const x = wall.col * STEP, y = wall.row * STEP;
-        if (wall.orientation === 'H') {
-            ctx.fillRect(x, y + CELL_SIZE, CELL_SIZE * 2 + GAP, GAP);
+        const color = owner === 'p1' ? P1_COLOR : P2_COLOR;
+        const anim  = wallAnims.find(a => a.wallKey === wallKey);
+
+        ctx.save();
+        ctx.fillStyle = color;
+        if (anim) {
+            const p = Math.min((now - anim.t0) / anim.dur, 1);
+            ctx.shadowColor = color;
+            ctx.shadowBlur  = 18 * (1 - p);          // glow flash that fades out
+            fillWall(wall.row, wall.col, wall.orientation, easeOutBack(p));
         } else {
-            ctx.fillRect(x + CELL_SIZE, y, GAP, CELL_SIZE * 2 + GAP);
+            fillWall(wall.row, wall.col, wall.orientation);
         }
+        ctx.restore();
     });
 }
 
@@ -191,11 +201,38 @@ function drawLegalMoves() {
 
 function drawPawns() {
     const radius = (CELL_SIZE - 2 * CELL_SIZE * 0.16) / 2;
-    [[gameState.p1Pawn, P1_COLOR], [gameState.p2Pawn, P2_COLOR]].forEach(([pawn, color]) => {
+    const now    = performance.now();
+    const up     = gameState.flipped ? 1 : -1;   // keep the hop visually upward
+
+    [['p1', gameState.p1Pawn, P1_COLOR], ['p2', gameState.p2Pawn, P2_COLOR]].forEach(([who, pawn, color]) => {
+        let cx = pawn.col * STEP + CELL_SIZE / 2;
+        let cy = pawn.row * STEP + CELL_SIZE / 2;
+        let r  = radius;
+        let glow = 0;
+
+        const a = pawnAnims.find(an => an.player === who);
+        if (a) {
+            const p = Math.min((now - a.t0) / a.dur, 1);
+            const e = easeInOutCubic(p);
+            const fx = a.fromCol * STEP + CELL_SIZE / 2;
+            const fy = a.fromRow * STEP + CELL_SIZE / 2;
+            const tx = a.toCol * STEP + CELL_SIZE / 2;
+            const ty = a.toRow * STEP + CELL_SIZE / 2;
+            cx = fx + (tx - fx) * e;
+            cy = fy + (ty - fy) * e;
+            const hop = Math.sin(Math.PI * p);
+            if (a.isJump) { cy += up * hop * CELL_SIZE * 0.5; r = radius * (1 + hop * 0.12); }
+            else          { r = radius * (1 + hop * 0.05); }
+            glow = hop;
+        }
+
+        ctx.save();
+        if (glow > 0) { ctx.shadowColor = color; ctx.shadowBlur = 10 * glow; }
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(pawn.col * STEP + CELL_SIZE / 2, pawn.row * STEP + CELL_SIZE / 2, radius, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
     });
 }
 
@@ -380,7 +417,7 @@ function handleTapWall(row, col, orientation) {
         if (!wallKeepsPathsOpen(wallKey)) return;
         tapPreview = { row, col, orientation, t0: performance.now() };
         playSound('Select');
-        startTapAnim();
+        ensureAnimLoop();
         updateTapHint();
     }
 }
@@ -433,19 +470,48 @@ canvas.addEventListener('mouseleave', () => {
 
 // ─── Tap-to-preview helpers ───────────────────────────────────────────────
 
-function startTapAnim() {
-    if (_tapAnimId) return;
-    (function tick() {
-        if (!tapPreview) { _tapAnimId = null; return; }
+function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// Prune finished animations; report whether anything still needs frames
+function boardAnimActive() {
+    const now = performance.now();
+    pawnAnims = pawnAnims.filter(a => now - a.t0 < a.dur);
+    wallAnims = wallAnims.filter(a => now - a.t0 < a.dur);
+    return Boolean(tapPreview) || pawnAnims.length > 0 || wallAnims.length > 0;
+}
+
+// Single rAF loop shared by the tap-preview, pawn moves and wall placements
+function ensureAnimLoop() {
+    if (_animId) return;
+    const tick = () => {
         render();
-        _tapAnimId = requestAnimationFrame(tick);
-    })();
+        _animId = boardAnimActive() ? requestAnimationFrame(tick) : null;
+    };
+    _animId = requestAnimationFrame(tick);
+}
+
+function startPawnAnim(player, from, to, isJump) {
+    pawnAnims = pawnAnims.filter(a => a.player !== player);
+    pawnAnims.push({
+        player, isJump,
+        fromRow: from.row, fromCol: from.col,
+        toRow: to.row, toCol: to.col,
+        t0: performance.now(), dur: isJump ? 380 : 250
+    });
+    ensureAnimLoop();
+}
+
+function startWallAnim(wallKey) {
+    wallAnims.push({ wallKey, t0: performance.now(), dur: 260 });
+    ensureAnimLoop();
 }
 
 function clearTapPreview() {
     tapPreview = null;
-    if (_tapAnimId) { cancelAnimationFrame(_tapAnimId); _tapAnimId = null; }
     updateTapHint();
+    render();
 }
 
 function updateTapHint() {
@@ -494,24 +560,27 @@ function movePawn(row, col) {
     if (gameState.gameOver) return;
     if (!gameState.legalMoves.some(m => m.row === row && m.col === col)) return;
 
-    const pawn   = gameState.currentPlayer === 'p1' ? gameState.p1Pawn : gameState.p2Pawn;
-    const isJump = Math.abs(row - pawn.row) + Math.abs(col - pawn.col) > 1;
+    const mover  = gameState.currentPlayer;
+    const from   = mover === 'p1' ? { ...gameState.p1Pawn } : { ...gameState.p2Pawn };
+    const isJump = Math.abs(row - from.row) + Math.abs(col - from.col) > 1;
 
-    if (gameState.currentPlayer === 'p1') gameState.p1Pawn = { row, col };
-    else                                  gameState.p2Pawn = { row, col };
+    if (mover === 'p1') gameState.p1Pawn = { row, col };
+    else                gameState.p2Pawn = { row, col };
 
     playSound(isJump ? 'Jump' : 'Move');
     if (socket && onlineMode) socket.emit('move', { type: 'pawn', row, col });
-    if (checkWin()) return;
-    gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
+    startPawnAnim(mover, from, { row, col }, isJump);
+    if (checkWin(isJump ? 380 : 250)) return;
+    gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateStatus();
     updateLegalMoves();
 }
 
 function placeWall(row, col, orientation) {
     if (gameState.gameOver) return;
-    if (gameState.currentPlayer === 'p1' && gameState.wallCounts.p1 === 0) return;
-    if (gameState.currentPlayer === 'p2' && gameState.wallCounts.p2 === 0) return;
+    const mover = gameState.currentPlayer;
+    if (mover === 'p1' && gameState.wallCounts.p1 === 0) return;
+    if (mover === 'p2' && gameState.wallCounts.p2 === 0) return;
 
     const wallKey = JSON.stringify({ row, col, orientation });
     if (gameState.walls.has(wallKey) || hasWallOverlap(row, col, orientation)) return;
@@ -519,38 +588,43 @@ function placeWall(row, col, orientation) {
     gameState.walls.add(wallKey);
     if (!bothPlayersHavePath()) { gameState.walls.delete(wallKey); return; }
 
-    gameState.wallOwners.set(wallKey, gameState.currentPlayer);
-    if (gameState.currentPlayer === 'p1') gameState.wallCounts.p1--;
-    else                                  gameState.wallCounts.p2--;
+    gameState.wallOwners.set(wallKey, mover);
+    if (mover === 'p1') gameState.wallCounts.p1--;
+    else                gameState.wallCounts.p2--;
 
     playSound('Wall');
     if (socket && onlineMode) socket.emit('move', { type: 'wall', row, col, orientation });
-    gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
+    startWallAnim(wallKey);
+    gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
 }
 
 function applyOpponentPawnMove(data) {
-    const pawn   = gameState.currentPlayer === 'p1' ? gameState.p1Pawn : gameState.p2Pawn;
-    const isJump = Math.abs(data.row - pawn.row) + Math.abs(data.col - pawn.col) > 1;
-    if (gameState.currentPlayer === 'p1') gameState.p1Pawn = { row: data.row, col: data.col };
-    else                                  gameState.p2Pawn = { row: data.row, col: data.col };
+    const mover  = gameState.currentPlayer;
+    const from   = mover === 'p1' ? { ...gameState.p1Pawn } : { ...gameState.p2Pawn };
+    const isJump = Math.abs(data.row - from.row) + Math.abs(data.col - from.col) > 1;
+    if (mover === 'p1') gameState.p1Pawn = { row: data.row, col: data.col };
+    else                gameState.p2Pawn = { row: data.row, col: data.col };
     playSound(isJump ? 'Jump' : 'Move');
-    if (checkWin()) return;
-    gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
+    startPawnAnim(mover, from, { row: data.row, col: data.col }, isJump);
+    if (checkWin(isJump ? 380 : 250)) return;
+    gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateStatus();
     updateLegalMoves();
 }
 
 function applyOpponentWallMove(data) {
+    const mover   = gameState.currentPlayer;
     const wallKey = JSON.stringify({ row: data.row, col: data.col, orientation: data.orientation });
     gameState.walls.add(wallKey);
-    gameState.wallOwners.set(wallKey, gameState.currentPlayer);
-    if (gameState.currentPlayer === 'p1') gameState.wallCounts.p1--;
-    else                                  gameState.wallCounts.p2--;
+    gameState.wallOwners.set(wallKey, mover);
+    if (mover === 'p1') gameState.wallCounts.p1--;
+    else                gameState.wallCounts.p2--;
     playSound('Wall');
-    gameState.currentPlayer = gameState.currentPlayer === 'p1' ? 'p2' : 'p1';
+    startWallAnim(wallKey);
+    gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
@@ -626,43 +700,48 @@ function updateStatus() {
     updateTapHint();
 }
 
-function checkWin() {
+function checkWin(delay = 0) {
     if (gameState.p1Pawn.row === 0) {
-        showWinScreen(document.getElementById('p1-name').textContent, 'p1');
+        showWinScreen(document.getElementById('p1-name').textContent, 'p1', delay);
         return true;
     }
     if (gameState.p2Pawn.row === BOARD_SIZE - 1) {
-        showWinScreen(document.getElementById('p2-name').textContent, 'p2');
+        showWinScreen(document.getElementById('p2-name').textContent, 'p2', delay);
         return true;
     }
     return false;
 }
 
-function showWinScreen(winner, playerClass) {
+function showWinScreen(winner, playerClass, delay = 0) {
     clearTapPreview();
-    gameState.gameOver = true;
-    playSound('Win');
+    gameState.gameOver = true;   // lock input now; reveal the card after the move lands
     document.getElementById('win-card').className  = `win-card ${playerClass}`;
     document.getElementById('win-pawn').className  = `win-pawn ${playerClass}`;
     const msg = document.getElementById('win-message');
     msg.textContent = `${winner} Wins!`;
     msg.className   = `win-title ${playerClass}`;
 
-    const card = document.getElementById('win-card');
-    card.style.animation = 'none';
-    card.getBoundingClientRect();
-    card.style.animation = '';
-
     document.getElementById('play-again-btn').classList.toggle('hidden', onlineMode);
     document.getElementById('btn-rematch').classList.toggle('hidden', !onlineMode);
     document.getElementById('btn-leave').classList.toggle('hidden', !onlineMode);
     if (onlineMode) updateRematchBtn('idle');
 
-    document.getElementById('win-overlay').classList.remove('hidden');
+    const reveal = () => {
+        playSound('Win');
+        const card = document.getElementById('win-card');
+        card.style.animation = 'none';
+        card.getBoundingClientRect();
+        card.style.animation = '';
+        document.getElementById('win-overlay').classList.remove('hidden');
+    };
+    if (delay) setTimeout(reveal, delay);
+    else       reveal();
 }
 
 function resetGame() {
     clearTapPreview();
+    pawnAnims = [];
+    wallAnims = [];
     gameState = {
         p1Pawn:        { row: 8, col: 4 },
         p2Pawn:        { row: 0, col: 4 },
