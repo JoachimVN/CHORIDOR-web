@@ -870,7 +870,7 @@ function initSocket(errorElId, callback) {
     socket.on('connect_error', err => {
         clearTimeout(timeout);
         clearConnectingBtn();
-        showLobbyError(errorElId, `${err?.message || 'Connection failed'} — ${connInfo}`);
+        showLobbyError(errorElId, `${err?.message || 'Connection failed'}: ${connInfo}`);
         socket?.disconnect();
         socket = null;
     });

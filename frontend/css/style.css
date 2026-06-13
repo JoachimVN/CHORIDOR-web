@@ -264,41 +264,45 @@ button:active {
 
 .controls .icon-btn:hover svg { color: #EAEDF6; }
 
-/* New Game, primary blue action */
+/* New Game, an elevated neutral so it reads as the main action without
+   clashing with the blue (active) and red (muted) toggle states */
 #new-game-btn {
-    color: #FFFFFF;
-    background: linear-gradient(180deg, #3C6193, #325580);
-    border-color: #5183C4;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    color: #E6EAF4;
+    background: linear-gradient(180deg, #2A3146, #1E2333);
+    border-color: #39415F;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 #new-game-btn:hover {
-    color: #FFFFFF;
-    background: linear-gradient(180deg, #426A9E, #3C6193);
-    border-color: #6A97D6;
-    box-shadow: 0 7px 20px rgba(62, 104, 168, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    color: #F2F5FB;
+    background: linear-gradient(180deg, #323A56, #262C42);
+    border-color: rgba(62, 104, 168, 0.85);
+    box-shadow: 0 7px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(62, 104, 168, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 #new-game-btn:active {
-    color: #FFFFFF;
-    background: linear-gradient(180deg, #325580, #2C4D74);
-    border-color: #4C7AC0;
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.35);
+    color: #F2F5FB;
+    background: linear-gradient(180deg, #1E2333, #171B29);
+    border-color: rgba(62, 104, 168, 0.6);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4);
 }
 
-/* Confirm-walls toggle while selected (the blue), plus its hover variant.
-   Solid colours (the translucent blue composited over the dark bar) so the
+/* Active toggle look shared by Confirm walls (on) and Animations (on): the
+   blue. Solid colours (translucent blue composited over the dark bar) so the
    contrast checker can evaluate them. */
-.icon-btn.tap-active {
+.icon-btn.tap-active,
+#anim-btn:not(.anim-off) {
     color: #C3D6F4;
     background: linear-gradient(180deg, #243450, #1B2438);
     border-color: rgba(90, 140, 210, 0.8);
     box-shadow: 0 0 14px rgba(62, 104, 168, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.icon-btn.tap-active svg { color: #C3D6F4; }
+.icon-btn.tap-active svg,
+#anim-btn:not(.anim-off) svg { color: #C3D6F4; }
 
-.icon-btn.tap-active:hover {
+.icon-btn.tap-active:hover,
+#anim-btn:not(.anim-off):hover {
     transform: translateY(-2px);
     color: #EAF1FB;
     background: linear-gradient(180deg, #314A72, #202E48);
@@ -306,23 +310,26 @@ button:active {
     box-shadow: 0 6px 18px rgba(62, 104, 168, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
-.icon-btn.tap-active:hover svg { color: #EAF1FB; }
+.icon-btn.tap-active:hover svg,
+#anim-btn:not(.anim-off):hover svg { color: #EAF1FB; }
 
-.icon-btn.tap-active:active {
+.icon-btn.tap-active:active,
+#anim-btn:not(.anim-off):active {
     transform: translateY(0) scale(0.93);
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.35);
 }
 
-/* Animations toggle, dimmed with a slashed icon when off */
+/* Animations off: dimmed with a slashed icon, brightening on hover */
 .icon-btn.anim-off {
     opacity: 0.5;
 }
 
 .icon-btn.anim-off:hover {
-    opacity: 0.8;
+    opacity: 0.85;
 }
 
-/* Mute, red tint while muted (solid colours for the contrast checker) */
+/* Mute, red tint while muted, with a brighter hover (solid colours for the
+   contrast checker) */
 #mute-btn.muted {
     color: #E0998C;
     border-color: rgba(158, 74, 64, 0.6);
@@ -330,6 +337,15 @@ button:active {
 }
 
 #mute-btn.muted svg { color: #E0998C; }
+
+#mute-btn.muted:hover {
+    color: #F2B7AA;
+    border-color: rgba(196, 96, 84, 0.9);
+    background: linear-gradient(180deg, #4A2F3A, #2C212A);
+    box-shadow: 0 6px 18px rgba(158, 74, 64, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+#mute-btn.muted:hover svg { color: #F2B7AA; }
 
 @keyframes mute-pop {
     0%   { transform: scale(1); }
