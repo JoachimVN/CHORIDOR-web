@@ -1,12 +1,15 @@
 const express  = require('express');
 const { createServer } = require('http');
 const { Server }       = require('socket.io');
+const path     = require('path');
 
 const app  = express();
 const http = createServer(app);
 const io   = new Server(http, {
     cors: { origin: '*', methods: ['GET', 'POST'] }
 });
+
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // roomCode -> { p1: socketId, p2: socketId | null }
 const rooms = new Map();
