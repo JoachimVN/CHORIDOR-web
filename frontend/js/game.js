@@ -578,9 +578,7 @@ const ANIM_ICON_ON = `<path d="M12 3.2l1.7 4.9 4.9 1.7-4.9 1.7L12 16.4l-1.7-4.9L
                       <path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/>`;
 const ANIM_ICON_OFF = ANIM_ICON_ON + `<line x1="3" y1="3" x2="21" y2="21"/>`;
 
-function setAnimEnabled(on, silent = false) {
-    animEnabled = on;
-    localStorage.setItem('choridor_anim', on ? '1' : '0');
+function updateAnimButton(on) {
     const btn  = document.getElementById('anim-btn');
     const icon = document.getElementById('anim-icon');
     if (btn) {
@@ -589,18 +587,31 @@ function setAnimEnabled(on, silent = false) {
         btn.setAttribute('aria-label', on ? 'Turn animations off' : 'Turn animations on');
     }
     if (icon) icon.innerHTML = on ? ANIM_ICON_ON : ANIM_ICON_OFF;
-    if (!on) {
-        pawnAnims = [];
-        wallAnims = [];
-        if (_animId) { cancelAnimationFrame(_animId); _animId = null; }
-    } else if (tapPreview) {
-        ensureAnimLoop();
-    }
+}
+
+function stopBoardAnims() {
+    pawnAnims = [];
+    wallAnims = [];
+    if (_animId) { cancelAnimationFrame(_animId); _animId = null; }
+}
+
+function setAnimEnabled(on, silent = false) {
+    animEnabled = on;
+    localStorage.setItem('choridor_anim', on ? '1' : '0');
+    updateAnimButton(on);
+    if (!on) stopBoardAnims();
+    else if (tapPreview) ensureAnimLoop();
     render();
     if (!silent) showToast(on ? 'Animations: ON' : 'Animations: OFF');
 }
 
 // ─── Moves ────────────────────────────────────────────────────────────────
+
+// Delay before the win card appears, so the deciding move animates first
+function winDelay(isJump) {
+    if (!animEnabled) return 0;
+    return isJump ? PAWN_JUMP_MS : PAWN_MOVE_MS;
+}
 
 function movePawn(row, col) {
     if (gameState.gameOver) return;
@@ -616,7 +627,7 @@ function movePawn(row, col) {
     playSound(isJump ? 'Jump' : 'Move');
     if (socket && onlineMode) socket.emit('move', { type: 'pawn', row, col });
     startPawnAnim(mover, from, { row, col }, isJump);
-    if (checkWin(animEnabled ? (isJump ? PAWN_JUMP_MS : PAWN_MOVE_MS) : 0)) return;
+    if (checkWin(winDelay(isJump))) return;
     gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateStatus();
     updateLegalMoves();
@@ -657,7 +668,7 @@ function applyOpponentPawnMove(data) {
     else                gameState.p2Pawn = { row: data.row, col: data.col };
     playSound(isJump ? 'Jump' : 'Move');
     startPawnAnim(mover, from, { row: data.row, col: data.col }, isJump);
-    if (checkWin(animEnabled ? (isJump ? PAWN_JUMP_MS : PAWN_MOVE_MS) : 0)) return;
+    if (checkWin(winDelay(isJump))) return;
     gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateStatus();
     updateLegalMoves();
@@ -1248,7 +1259,7 @@ document.getElementById('flip-btn').addEventListener('click', () => {
         render();
         canvas.style.transition = 'none';
         canvas.style.transform  = 'rotateX(-90deg)';
-        void canvas.offsetWidth;                 // commit the jump while edge-on
+        canvas.getBoundingClientRect();          // commit the jump while edge-on
         requestAnimationFrame(() => {
             canvas.style.transition = `transform ${HALF}ms ease-out`;
             canvas.style.transform  = 'rotateX(0deg)';
@@ -1286,7 +1297,7 @@ document.getElementById('mute-btn').addEventListener('click', () => {
     if (animEnabled) {
         // Re-trigger the pop animation
         icon.style.animation = 'none';
-        void icon.offsetWidth;
+        icon.getBoundingClientRect();
         icon.style.animation = 'mute-pop 0.32s ease';
     }
 });
@@ -1296,7 +1307,7 @@ document.getElementById('change-mode-btn').addEventListener('click', () => {
     const cmIcon = document.querySelector('#change-mode-btn svg');
     if (animEnabled && cmIcon) {
         cmIcon.style.animation = 'none';
-        void cmIcon.offsetWidth;
+        cmIcon.getBoundingClientRect();
         cmIcon.style.animation = 'ctrl-icon-pop 0.34s ease';
     }
     onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
