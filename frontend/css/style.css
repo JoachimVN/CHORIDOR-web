@@ -266,30 +266,32 @@ button:active {
 
 /* New Game, primary blue action */
 #new-game-btn {
-    color: #EAF1FB;
-    background: linear-gradient(180deg, #4374B8, #37659F);
+    color: #FFFFFF;
+    background: linear-gradient(180deg, #3C6193, #325580);
     border-color: #5183C4;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 #new-game-btn:hover {
     color: #FFFFFF;
-    background: linear-gradient(180deg, #4E80C6, #4374B8);
+    background: linear-gradient(180deg, #426A9E, #3C6193);
     border-color: #6A97D6;
     box-shadow: 0 7px 20px rgba(62, 104, 168, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 #new-game-btn:active {
     color: #FFFFFF;
-    background: linear-gradient(180deg, #37659F, #305892);
+    background: linear-gradient(180deg, #325580, #2C4D74);
     border-color: #4C7AC0;
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.35);
 }
 
-/* Confirm-walls toggle while selected (the blue), plus its hover variant */
+/* Confirm-walls toggle while selected (the blue), plus its hover variant.
+   Solid colours (the translucent blue composited over the dark bar) so the
+   contrast checker can evaluate them. */
 .icon-btn.tap-active {
     color: #C3D6F4;
-    background: linear-gradient(180deg, rgba(62, 104, 168, 0.34), rgba(62, 104, 168, 0.18));
+    background: linear-gradient(180deg, #243450, #1B2438);
     border-color: rgba(90, 140, 210, 0.8);
     box-shadow: 0 0 14px rgba(62, 104, 168, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
@@ -299,7 +301,7 @@ button:active {
 .icon-btn.tap-active:hover {
     transform: translateY(-2px);
     color: #EAF1FB;
-    background: linear-gradient(180deg, rgba(78, 128, 198, 0.5), rgba(62, 104, 168, 0.3));
+    background: linear-gradient(180deg, #314A72, #202E48);
     border-color: rgba(122, 168, 230, 0.95);
     box-shadow: 0 6px 18px rgba(62, 104, 168, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
@@ -320,11 +322,11 @@ button:active {
     opacity: 0.8;
 }
 
-/* Mute, red tint while muted */
+/* Mute, red tint while muted (solid colours for the contrast checker) */
 #mute-btn.muted {
     color: #E0998C;
     border-color: rgba(158, 74, 64, 0.6);
-    background: linear-gradient(180deg, rgba(158, 74, 64, 0.26), rgba(158, 74, 64, 0.1));
+    background: linear-gradient(180deg, #3A2530, #221A22);
 }
 
 #mute-btn.muted svg { color: #E0998C; }
