@@ -455,14 +455,23 @@ function updateStatus() {
         status.textContent = myTurn ? 'Your turn' : "Opponent's turn";
         status.className   = `status-label ${gameState.currentPlayer}`;
     } else {
-        status.textContent = `Player ${gameState.currentPlayer === 'p1' ? '1' : '2'}'s Turn`;
+        const name = gameState.currentPlayer === 'p1'
+            ? document.getElementById('p1-name').textContent
+            : document.getElementById('p2-name').textContent;
+        status.textContent = `${name}'s Turn`;
         status.className   = `status-label ${gameState.currentPlayer}`;
     }
 }
 
 function checkWin() {
-    if (gameState.p1Pawn.row === 0)            { showWinScreen('Player 1', 'p1'); return true; }
-    if (gameState.p2Pawn.row === BOARD_SIZE - 1) { showWinScreen('Player 2', 'p2'); return true; }
+    if (gameState.p1Pawn.row === 0) {
+        showWinScreen(document.getElementById('p1-name').textContent, 'p1');
+        return true;
+    }
+    if (gameState.p2Pawn.row === BOARD_SIZE - 1) {
+        showWinScreen(document.getElementById('p2-name').textContent, 'p2');
+        return true;
+    }
     return false;
 }
 
@@ -540,6 +549,7 @@ function initSocket(errorElId, callback) {
     socket.on('game-start', () => {
         onlineMode = true;
         hideLobby();
+        applyPlayerNames();
         resetGame();
     });
 
@@ -576,7 +586,42 @@ function showLobbyError(elId, msg) {
     el.classList.remove('hidden');
 }
 
-document.getElementById('btn-local').addEventListener('click', () => { playSound('Select'); hideLobby(); });
+// ─── Player name ─────────��────────────────────────────────────────────────
+
+const nameInput = document.getElementById('player-name-input');
+const savedName = localStorage.getItem('choridor_player_name') || '';
+if (nameInput) nameInput.value = savedName;
+
+function getMyName() {
+    return localStorage.getItem('choridor_player_name')?.trim() || '';
+}
+
+function applyPlayerNames() {
+    const name = getMyName();
+    if (onlineMode) {
+        if (onlineRole === 'p1') {
+            document.getElementById('p1-name').textContent = name || 'Player 1';
+            document.getElementById('p2-name').textContent = 'Opponent';
+        } else {
+            document.getElementById('p1-name').textContent = 'Opponent';
+            document.getElementById('p2-name').textContent = name || 'Player 2';
+        }
+    } else {
+        document.getElementById('p1-name').textContent = name || 'Player 1';
+        document.getElementById('p2-name').textContent = 'Player 2';
+    }
+}
+
+nameInput?.addEventListener('input', () => {
+    const val = nameInput.value.trim();
+    if (val) localStorage.setItem('choridor_player_name', val);
+    else localStorage.removeItem('choridor_player_name');
+    if (!onlineMode) applyPlayerNames();
+});
+
+applyPlayerNames();
+
+document.getElementById('btn-local').addEventListener('click', () => { playSound('Select'); applyPlayerNames(); hideLobby(); });
 
 document.getElementById('btn-online').addEventListener('click', () => { playSound('Select'); showLobbyView('lview-online'); });
 document.getElementById('btn-online-back').addEventListener('click', () => { playSound('Select'); showLobbyView('lview-mode'); });
@@ -677,6 +722,7 @@ document.getElementById('change-mode-btn').addEventListener('click', () => {
     document.getElementById('win-overlay').classList.add('hidden');
     document.getElementById('lobby-overlay').classList.remove('hidden');
     showLobbyView('lview-mode');
+    applyPlayerNames();
     resetGame();
 });
 

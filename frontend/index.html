@@ -14,22 +14,50 @@
             <img src="images/logos/logo.png" alt="CHORIDOR" class="lobby-logo">
 
             <div id="lview-mode" class="lobby-view">
-                <div class="lobby-buttons">
-                    <button class="win-action-btn" id="btn-local">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-                            <circle cx="19" cy="7" r="2"/><path d="M23 21v-1a3 3 0 0 0-2-2.83"/>
-                        </svg>
-                        <span>Local</span>
-                    </button>
-                    <button class="win-action-btn" id="btn-online">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                        </svg>
-                        <span>Online</span>
-                    </button>
+                <div class="lobby-name-wrap">
+                    <input type="text" id="player-name-input" class="lobby-name-input" placeholder="Your name" maxlength="20" autocomplete="off" spellcheck="false">
                 </div>
+
+                <button class="lobby-mode-card" id="btn-local">
+                    <svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+                        <circle cx="19" cy="7" r="2"/><path d="M23 21v-1a3 3 0 0 0-2-2.83"/>
+                    </svg>
+                    <div class="mode-text">
+                        <span class="mode-title">Local</span>
+                        <span class="mode-sub">Same device</span>
+                    </div>
+                    <svg class="mode-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </button>
+
+                <button class="lobby-mode-card" id="btn-online">
+                    <svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                    <div class="mode-text">
+                        <span class="mode-title">Online</span>
+                        <span class="mode-sub">Play with a friend</span>
+                    </div>
+                    <svg class="mode-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </button>
+
+                <button class="lobby-mode-card lobby-mode-disabled" id="btn-ai" disabled>
+                    <svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="4" width="16" height="16" rx="2"/>
+                        <rect x="9" y="9" width="6" height="6"/>
+                        <path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
+                    </svg>
+                    <div class="mode-text">
+                        <span class="mode-title">vs AI</span>
+                        <span class="mode-sub">Single player</span>
+                    </div>
+                    <span class="mode-soon">Soon</span>
+                </button>
             </div>
 
             <div id="lview-online" class="lobby-view hidden">
@@ -72,6 +100,12 @@
                 <button class="win-btn" id="btn-join-confirm">Join Game</button>
                 <button class="lobby-back" id="btn-join-back">← Back</button>
             </div>
+        </div>
+
+        <div class="lobby-footer">
+            <a href="tos.html">Terms</a>
+            <span>·</span>
+            <a href="privacy.html">Privacy</a>
         </div>
     </div>
 

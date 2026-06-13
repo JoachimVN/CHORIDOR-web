@@ -358,12 +358,13 @@ button:hover .icon-btn svg {
     background: #13151F;
     border: 1px solid #2A2E48;
     border-radius: 16px;
-    padding: 40px 56px 44px;
+    padding: 36px 28px 28px;
     display: flex;
     flex-direction: column;
     align-items: center;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
-    min-width: 320px;
+    min-width: 340px;
+    width: 340px;
 }
 
 .lobby-logo {
@@ -449,6 +450,146 @@ button:hover .icon-btn svg {
     border: none;
 }
 
+/* Lobby name input */
+.lobby-name-wrap {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.lobby-name-input {
+    width: 100%;
+    background: #0D0F1A;
+    border: 1px solid #2E3250;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #C8CCDC;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+.lobby-name-input:focus { border-color: #3E68A8; }
+.lobby-name-input::placeholder { color: #3A3F58; font-weight: normal; }
+
+/* Lobby mode cards */
+.lobby-mode-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 14px 16px;
+    background: #191C2A;
+    border: 1px solid #242842;
+    border-left: 3px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: left;
+    margin-bottom: 8px;
+    font-weight: normal;
+    font-size: 14px;
+    color: #C8CCDC;
+}
+
+.lobby-mode-card:last-of-type { margin-bottom: 0; }
+
+.mode-icon {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+}
+
+.mode-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mode-title {
+    color: #C8CCDC;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.mode-sub {
+    color: #454A68;
+    font-size: 11px;
+    font-weight: normal;
+}
+
+.mode-arrow {
+    color: #3A3F58;
+    flex-shrink: 0;
+    transition: color 0.18s;
+}
+
+.mode-soon {
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #454A68;
+    background: #1A1D2E;
+    border: 1px solid #2A2E48;
+    padding: 3px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+#btn-local { border-left-color: rgba(158, 74, 64, 0.45); }
+#btn-local .mode-icon { color: #9E4A40; }
+#btn-local:hover {
+    background: #1C1E2C;
+    border-color: rgba(158, 74, 64, 0.3);
+    border-left-color: #9E4A40;
+    box-shadow: 0 0 20px rgba(158, 74, 64, 0.1);
+}
+#btn-local:hover .mode-arrow { color: #8890A8; }
+
+#btn-online { border-left-color: rgba(62, 104, 168, 0.45); }
+#btn-online .mode-icon { color: #3E68A8; }
+#btn-online:hover {
+    background: #1C1E2C;
+    border-color: rgba(62, 104, 168, 0.3);
+    border-left-color: #3E68A8;
+    box-shadow: 0 0 20px rgba(62, 104, 168, 0.12);
+}
+#btn-online:hover .mode-arrow { color: #8890A8; }
+
+.lobby-mode-disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+    border-left-color: rgba(90, 88, 130, 0.3) !important;
+}
+.lobby-mode-disabled .mode-icon { color: #5A5880; }
+.lobby-mode-disabled:hover {
+    background: #191C2A !important;
+    border-color: #242842 !important;
+    box-shadow: none !important;
+}
+
+/* Lobby footer */
+.lobby-footer {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 20px;
+    color: #2A2E48;
+    font-size: 11px;
+}
+
+.lobby-footer a {
+    color: #3A3F58;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.lobby-footer a:hover { color: #8890A8; }
+
 @media (max-width: 520px) {
     .top-bar {
         padding: 1.5vh 10px;
@@ -466,5 +607,10 @@ button:hover .icon-btn svg {
     .logo {
         height: 3.5vh;
         max-width: 18vw;
+    }
+
+    .lobby-card {
+        min-width: unset;
+        width: calc(100vw - 40px);
     }
 }
