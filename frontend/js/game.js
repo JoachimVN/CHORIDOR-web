@@ -973,11 +973,15 @@ if (isDiscord) try {
         if (data.username) {
             myAvatar = data.avatarUrl || '';
             if (!localStorage.getItem('choridor_player_name')) {
-                const safeName = String(data.username).replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, 20);
-                localStorage.setItem('choridor_player_name', safeName);
+                const safeName = String(data.username).replace(/[^a-zA-Z0-9 _.\-#]/g, '').trim().slice(0, 20);
                 const dni = document.getElementById('discord-name-input');
-                if (dni) dni.value = safeName;
-                if (nameInput) nameInput.value = safeName;
+                if (dni) {
+                    dni.value = safeName;
+                    dni.dispatchEvent(new Event('input'));
+                } else if (nameInput) {
+                    nameInput.value = safeName;
+                    nameInput.dispatchEvent(new Event('input'));
+                }
             }
         }
     } catch { /* OAuth declined or unavailable */ }
