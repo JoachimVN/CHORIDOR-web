@@ -9,7 +9,15 @@ const io   = new Server(http, {
     cors: { origin: '*', methods: ['GET', 'POST'] }
 });
 
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../frontend'), {
+    setHeaders(res, filePath) {
+        if (/\.(html|js|css)$/.test(filePath)) {
+            res.setHeader('Cache-Control', 'no-cache');
+        } else {
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+        }
+    }
+}));
 
 const rooms             = new Map(); // code → { p1, p2, p1Name, p2Name, p1Avatar, p2Avatar, rematchReady }
 const pendingActivities = new Map(); // instanceId → { socket, name, avatarUrl }
