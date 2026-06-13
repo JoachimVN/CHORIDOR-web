@@ -70,6 +70,7 @@ let rematchState   = 'idle'; // 'idle' | 'waiting' | 'incoming'
 
 const isDiscord       = location.hostname.endsWith('.discordsays.com');
 let discordInstanceId = null;
+if (isDiscord) document.body.classList.add('discord-activity');
 
 function isMyTurn() {
     return !onlineMode || gameState.currentPlayer === onlineRole;

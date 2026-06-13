@@ -688,6 +688,13 @@ button:hover .icon-btn svg {
 .legal-modal-card a:hover { text-decoration: underline; }
 .legal-modal-card hr { border: none; border-top: 1px solid #1E2130; margin: 24px 0; }
 
+/* Discord mobile — push content below Discord's voice overlay (~48px) */
+@media (max-width: 768px) {
+    .discord-activity .app {
+        padding-top: 52px;
+    }
+}
+
 @media (max-width: 520px) {
     .top-bar {
         padding: 1.5vh 10px;
@@ -707,8 +714,40 @@ button:hover .icon-btn svg {
         max-width: 18vw;
     }
 
+    .bottom-bar {
+        flex-direction: column;
+        padding: 0.85vh 10px;
+        gap: 0.6vh;
+    }
+
+    .status-label {
+        font-size: 1.75vh;
+    }
+
+    .controls {
+        gap: 8px;
+    }
+
+    .controls button:not(.icon-btn) {
+        padding: 0.9vh 12px;
+        font-size: 1.5vh;
+    }
+
     .lobby-card {
         width: calc(100vw - 40px);
         padding: 36px 24px 28px;
+    }
+}
+
+/* Landscape phone — tighten both bars vertically */
+@media (max-height: 480px) {
+    .top-bar,
+    .bottom-bar {
+        padding-top: 0.5vh;
+        padding-bottom: 0.5vh;
+    }
+
+    .logo {
+        height: 3.5vh;
     }
 }
