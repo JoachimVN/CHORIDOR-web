@@ -550,7 +550,7 @@ function setTapMode(enabled) {
         btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
     }
     if (!enabled) clearTapPreview();
-    showToast(enabled ? 'Tap-to-place walls: ON — tap a slot, then confirm' : 'Tap-to-place walls: OFF');
+    showToast(enabled ? 'Confirm walls: ON — pick a slot, then confirm' : 'Confirm walls: OFF');
     render();
 }
 
@@ -1334,7 +1334,7 @@ updateStatus();
         // First-time touch users: a one-off nudge so the flow is discoverable
         if (saved === null && autoTouch && !localStorage.getItem('choridor_tap_hint_seen')) {
             localStorage.setItem('choridor_tap_hint_seen', '1');
-            setTimeout(() => showToast('Tap a slot to preview a wall, then confirm'), 800);
+            setTimeout(() => showToast('Confirm walls is on — pick a slot, then confirm'), 800);
         }
     }
 }
