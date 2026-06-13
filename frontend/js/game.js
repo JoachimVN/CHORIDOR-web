@@ -64,6 +64,12 @@ let tapMode    = false;
 let tapPreview = null;  // { row, col, orientation } | null while awaiting confirm
 let _tapAnimId = null;
 
+// ─── Control-button animation state ───────────────────────────────────────
+
+let flipAnimating  = false;
+let flipIconDeg    = 0;
+let newGameIconDeg = 0;
+
 // ─── Online state ─────────────────────────────────────────────────────────
 
 let socket         = null;
@@ -337,7 +343,7 @@ function hasWall(orientation, row, col) {
 // ─── Click handling ───────────────────────────────────────────────────────
 
 canvas.addEventListener('click', e => {
-    if (gameState.gameOver || !isMyTurn()) return;
+    if (gameState.gameOver || !isMyTurn() || flipAnimating) return;
     const rect = canvas.getBoundingClientRect();
     let x = (e.clientX - rect.left) / boardScale;
     let y = (e.clientY - rect.top)  / boardScale;
@@ -1054,6 +1060,9 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
 
 document.getElementById('new-game-btn').addEventListener('click', () => {
     playSound('Select');
+    newGameIconDeg += 360;
+    const ngIcon = document.querySelector('#new-game-btn svg');
+    if (ngIcon) ngIcon.style.transform = `rotate(${newGameIconDeg}deg)`;
     if (onlineMode) {
         onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
         socket?.disconnect(); socket = null;
@@ -1065,8 +1074,44 @@ document.getElementById('new-game-btn').addEventListener('click', () => {
 });
 
 document.getElementById('flip-btn').addEventListener('click', () => {
-    gameState.flipped = !gameState.flipped;
-    render();
+    if (flipAnimating) return;
+    flipAnimating = true;
+    playSound('Select');
+
+    // Spin the icon a half-turn each press, in sync with the board
+    flipIconDeg += 180;
+    const icon = document.querySelector('#flip-btn svg');
+    if (icon) icon.style.transform = `rotate(${flipIconDeg}deg)`;
+
+    const reduce = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+        gameState.flipped = !gameState.flipped;
+        render();
+        flipAnimating = false;
+        return;
+    }
+
+    // 3D flip: rotate edge-on, swap orientation while hidden, rotate back in
+    const HALF = 210;
+    canvas.style.transition = `transform ${HALF}ms ease-in`;
+    canvas.style.transform  = 'rotateX(90deg)';
+
+    setTimeout(() => {
+        gameState.flipped = !gameState.flipped;
+        render();
+        canvas.style.transition = 'none';
+        canvas.style.transform  = 'rotateX(-90deg)';
+        void canvas.offsetWidth;                 // commit the jump while edge-on
+        requestAnimationFrame(() => {
+            canvas.style.transition = `transform ${HALF}ms ease-out`;
+            canvas.style.transform  = 'rotateX(0deg)';
+            setTimeout(() => {
+                canvas.style.transition = '';
+                canvas.style.transform  = '';
+                flipAnimating = false;
+            }, HALF + 20);
+        });
+    }, HALF);
 });
 
 document.getElementById('tap-mode-btn').addEventListener('click', () => {
@@ -1076,17 +1121,30 @@ document.getElementById('tap-mode-btn').addEventListener('click', () => {
 
 document.getElementById('mute-btn').addEventListener('click', () => {
     muted = !muted;
-    document.getElementById('mute-icon').innerHTML = muted
+    const btn  = document.getElementById('mute-btn');
+    const icon = document.getElementById('mute-icon');
+    btn.classList.toggle('muted', muted);
+    icon.innerHTML = muted
         ? `<path d="M11 5 6 9H2v6h4l5 4V5z"/>
            <line x1="23" y1="9" x2="17" y2="15"/>
            <line x1="17" y1="9" x2="23" y2="15"/>`
         : `<path d="M11 5 6 9H2v6h4l5 4V5z"/>
            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>`;
+    // Re-trigger the pop animation
+    icon.style.animation = 'none';
+    void icon.offsetWidth;
+    icon.style.animation = 'mute-pop 0.32s ease';
 });
 
 document.getElementById('change-mode-btn').addEventListener('click', () => {
     playSound('Select');
+    const cmIcon = document.querySelector('#change-mode-btn svg');
+    if (cmIcon) {
+        cmIcon.style.animation = 'none';
+        void cmIcon.offsetWidth;
+        cmIcon.style.animation = 'ctrl-icon-pop 0.34s ease';
+    }
     onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
     socket?.disconnect(); socket = null;
     document.getElementById('win-overlay').classList.add('hidden');

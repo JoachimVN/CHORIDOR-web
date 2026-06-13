@@ -115,11 +115,14 @@ body {
     background: #0F1117;
     min-height: 0;
     position: relative;
+    perspective: 1400px;
 }
 
 canvas {
     display: block;
     cursor: default;
+    transform-origin: center center;
+    backface-visibility: hidden;
 }
 
 .bottom-bar {
@@ -191,8 +194,100 @@ button:active {
     height: 2vh;
 }
 
-button:hover .icon-btn svg {
+.icon-btn:hover svg {
     color: #C8CCDC;
+}
+
+/* ─── Bottom-bar controls — tactile, animated ─────────────────────────── */
+.controls button {
+    height: 4.4vh;
+    min-height: 38px;
+    padding: 0 18px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #9098B6;
+    background: linear-gradient(180deg, #232739, #191C2A);
+    border: 1px solid #2E3250;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background 0.2s ease, border-color 0.2s ease,
+                box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.controls .icon-btn {
+    width: 4.4vh;
+    min-width: 38px;
+    padding: 0;
+}
+
+.controls button:hover {
+    transform: translateY(-2px);
+    color: #D4D8E6;
+    border-color: #3E4470;
+    background: linear-gradient(180deg, #2A2F44, #1E2230);
+    box-shadow: 0 7px 18px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.controls button:active {
+    transform: translateY(0) scale(0.93);
+    color: #D4D8E6;
+    background: linear-gradient(180deg, #1E2230, #15182A);
+    border-color: #3E4470;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    transition-duration: 0.08s;
+}
+
+#new-game-btn:active {
+    color: #FFFFFF;
+    background: linear-gradient(180deg, #335B95, #2C5085);
+    border-color: #4C7AC0;
+}
+
+.controls button svg {
+    width: 2vh;
+    height: 2vh;
+    color: inherit;
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.controls .icon-btn:hover svg { color: #D4D8E6; }
+
+/* New Game — primary blue action */
+#new-game-btn {
+    color: #EAF0FA;
+    background: linear-gradient(180deg, #3E68A8, #335B95);
+    border-color: #4C7AC0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+#new-game-btn:hover {
+    color: #FFFFFF;
+    background: linear-gradient(180deg, #4A78C0, #3E68A8);
+    border-color: #5E8AD2;
+    box-shadow: 0 7px 20px rgba(62, 104, 168, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* Mute — red tint while muted */
+#mute-btn.muted {
+    border-color: rgba(158, 74, 64, 0.55);
+    background: linear-gradient(180deg, rgba(158, 74, 64, 0.22), rgba(158, 74, 64, 0.08));
+}
+
+#mute-btn.muted svg { color: #D08577; }
+
+@keyframes mute-pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(0.68); }
+    100% { transform: scale(1); }
+}
+
+@keyframes ctrl-icon-pop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.22); }
+    100% { transform: scale(1); }
 }
 
 /* Win Screen */
@@ -730,9 +825,16 @@ button:hover .icon-btn svg {
         gap: 8px;
     }
 
+    /* Collapse text actions to icon-only squares so the row never overflows */
     .controls button:not(.icon-btn) {
-        padding: 0.9vh 12px;
-        font-size: 1.5vh;
+        width: 4.4vh;
+        min-width: 38px;
+        padding: 0;
+    }
+
+    #change-mode-btn span,
+    #new-game-btn span {
+        display: none;
     }
 
     .lobby-card {
@@ -897,6 +999,8 @@ button:hover .icon-btn svg {
     .tap-confirm-row,
     .tap-toast { transition-duration: 0.12s; }
     .tap-confirm-place { animation: none; }
+    .controls button svg { transition: color 0.2s ease; }
+    .controls button:hover { transform: none; }
 }
 
 /* Keep the confirm buttons within a short landscape bottom bar */
