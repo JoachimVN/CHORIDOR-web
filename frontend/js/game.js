@@ -60,9 +60,10 @@ let hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow:
 
 // ─── Online state ─────────────────────────────────────────────────────────
 
-let socket     = null;
-let onlineRole = null;   // 'p1' | 'p2' | null
-let onlineMode = false;
+let socket       = null;
+let onlineRole   = null;   // 'p1' | 'p2' | null
+let onlineMode   = false;
+let opponentName = '';
 
 function isMyTurn() {
     return !onlineMode || gameState.currentPlayer === onlineRole;
@@ -566,7 +567,8 @@ function initSocket(errorElId, callback) {
 
     socket.on('room-joined', () => { onlineRole = 'p2'; });
 
-    socket.on('game-start', () => {
+    socket.on('game-start', ({ p1Name, p2Name } = {}) => {
+        opponentName = onlineRole === 'p1' ? (p2Name || '') : (p1Name || '');
         onlineMode = true;
         hideLobby();
         applyPlayerNames();
@@ -578,7 +580,8 @@ function initSocket(errorElId, callback) {
     socket.on('room-error', msg => showLobbyError(errorElId, msg));
 
     socket.on('opponent-left', () => {
-        onlineMode  = false;
+        onlineMode   = false;
+        opponentName = '';
         gameState.gameOver = true;
         const s = document.getElementById('status');
         s.textContent = 'Opponent disconnected';
@@ -684,9 +687,9 @@ function applyPlayerNames() {
     if (onlineMode) {
         if (onlineRole === 'p1') {
             document.getElementById('p1-name').textContent = name || 'Player 1';
-            document.getElementById('p2-name').textContent = 'Opponent';
+            document.getElementById('p2-name').textContent = opponentName || 'Opponent';
         } else {
-            document.getElementById('p1-name').textContent = 'Opponent';
+            document.getElementById('p1-name').textContent = opponentName || 'Opponent';
             document.getElementById('p2-name').textContent = name || 'Player 2';
         }
     } else {
@@ -723,7 +726,7 @@ document.getElementById('btn-online-back').addEventListener('click', () => { pla
 document.getElementById('btn-create').addEventListener('click', () => {
     playSound('Select');
     setConnectingBtn('btn-create');
-    initSocket('create-error', () => socket.emit('create-room'));
+    initSocket('create-error', () => socket.emit('create-room', { name: getMyName() }));
 });
 
 document.getElementById('btn-join').addEventListener('click', () => { playSound('Select'); showLobbyView('lview-join'); });
@@ -752,7 +755,7 @@ document.getElementById('btn-join-confirm').addEventListener('click', () => {
     playSound('Select');
     document.getElementById('join-error').classList.add('hidden');
     setConnectingBtn('btn-join-confirm');
-    initSocket('join-error', () => socket.emit('join-room', code));
+    initSocket('join-error', () => socket.emit('join-room', { code, name: getMyName() }));
 });
 
 document.getElementById('room-code-input').addEventListener('keydown', e => {
@@ -781,7 +784,7 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
     playSound('Select');
     if (onlineMode) {
         // In online mode, go back to lobby for a new game
-        onlineMode = false; onlineRole = null;
+        onlineMode = false; onlineRole = null; opponentName = '';
         socket?.disconnect(); socket = null;
         document.getElementById('win-overlay').classList.add('hidden');
         document.getElementById('lobby-overlay').classList.remove('hidden');
@@ -795,7 +798,7 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
 document.getElementById('new-game-btn').addEventListener('click', () => {
     playSound('Select');
     if (onlineMode) {
-        onlineMode = false; onlineRole = null;
+        onlineMode = false; onlineRole = null; opponentName = '';
         socket?.disconnect(); socket = null;
         document.getElementById('win-overlay').classList.add('hidden');
         document.getElementById('lobby-overlay').classList.remove('hidden');
@@ -822,7 +825,7 @@ document.getElementById('mute-btn').addEventListener('click', () => {
 
 document.getElementById('change-mode-btn').addEventListener('click', () => {
     playSound('Select');
-    onlineMode = false; onlineRole = null;
+    onlineMode = false; onlineRole = null; opponentName = '';
     socket?.disconnect(); socket = null;
     document.getElementById('win-overlay').classList.add('hidden');
     document.getElementById('lobby-overlay').classList.remove('hidden');

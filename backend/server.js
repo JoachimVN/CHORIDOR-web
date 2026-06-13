@@ -26,25 +26,26 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 io.on('connection', socket => {
     let roomCode = null;
 
-    socket.on('create-room', () => {
+    socket.on('create-room', ({ name } = {}) => {
         const code = makeCode();
-        rooms.set(code, { p1: socket.id, p2: null });
+        rooms.set(code, { p1: socket.id, p2: null, p1Name: name || '' });
         roomCode = code;
         socket.join(code);
         socket.emit('room-created', { code, role: 'p1' });
         console.log(`Room ${code} created by ${socket.id}`);
     });
 
-    socket.on('join-room', code => {
+    socket.on('join-room', ({ code, name } = {}) => {
         code = (code || '').trim().toUpperCase();
         const room = rooms.get(code);
         if (!room)    { socket.emit('room-error', 'Room not found'); return; }
         if (room.p2)  { socket.emit('room-error', 'Room is full');   return; }
-        room.p2  = socket.id;
-        roomCode = code;
+        room.p2     = socket.id;
+        room.p2Name = name || '';
+        roomCode    = code;
         socket.join(code);
         socket.emit('room-joined', { code, role: 'p2' });
-        io.to(code).emit('game-start', { code });
+        io.to(code).emit('game-start', { code, p1Name: room.p1Name, p2Name: room.p2Name });
         console.log(`Room ${code}: ${room.p1} vs ${room.p2}`);
     });
 
