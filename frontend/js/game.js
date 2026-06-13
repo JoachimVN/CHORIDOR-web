@@ -595,6 +595,7 @@ function placeWall(row, col, orientation) {
     playSound('Wall');
     if (socket && onlineMode) socket.emit('move', { type: 'wall', row, col, orientation });
     startWallAnim(wallKey);
+    animateWallSpend(mover);
     gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateWallCounts();
     updateStatus();
@@ -624,6 +625,7 @@ function applyOpponentWallMove(data) {
     else                gameState.wallCounts.p2--;
     playSound('Wall');
     startWallAnim(wallKey);
+    animateWallSpend(mover);
     gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateWallCounts();
     updateStatus();
@@ -673,6 +675,7 @@ function updateWallCounts() {
     ['p1', 'p2'].forEach(p => {
         for (let i = 0; i < WALLS_PER_PLAYER; i++) {
             const box = document.getElementById(`${p}-wall-${i}`);
+            if (box.classList.contains('spending')) continue;   // let the animation own it
             if (i < gameState.wallCounts[p]) {
                 box.className = 'wall-box active';
                 box.style.background = p === 'p1' ? P1_COLOR : P2_COLOR;
@@ -682,6 +685,21 @@ function updateWallCounts() {
             }
         }
     });
+}
+
+// Animate the just-spent wall box (call after the count has been decremented)
+function animateWallSpend(player) {
+    const idx = gameState.wallCounts[player];   // the box that just flipped to "used"
+    const box = document.getElementById(`${player}-wall-${idx}`);
+    if (!box) return;
+    box.classList.remove('used');
+    box.classList.add('spending');
+    box.style.background = player === 'p1' ? P1_COLOR : P2_COLOR;
+    box.addEventListener('animationend', () => {
+        box.classList.remove('spending');
+        box.className = 'wall-box used';
+        box.style.background = WALL_USED_COLOR;
+    }, { once: true });
 }
 
 function updateStatus() {
