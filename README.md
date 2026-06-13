@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="frontend/images/logos/logo.png" alt="CHORIDOR" width="320"/>
+    <img src="frontend/images/logos/logo.png" alt="CHORIDOR"/>
 </p>
 
 <p align="center">
