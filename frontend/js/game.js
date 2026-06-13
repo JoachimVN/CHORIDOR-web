@@ -60,10 +60,12 @@ let hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow:
 
 // ─── Online state ─────────────────────────────────────────────────────────
 
-let socket       = null;
-let onlineRole   = null;   // 'p1' | 'p2' | null
-let onlineMode   = false;
-let opponentName = '';
+let socket         = null;
+let onlineRole     = null;   // 'p1' | 'p2' | null
+let onlineMode     = false;
+let opponentName   = '';
+let opponentAvatar = '';
+let myAvatar       = '';
 
 const isDiscord       = location.hostname.endsWith('.discordsays.com');
 let discordInstanceId = null;
@@ -570,9 +572,10 @@ function initSocket(errorElId, callback) {
 
     socket.on('room-joined', () => { onlineRole = 'p2'; });
 
-    socket.on('game-start', ({ p1Name, p2Name, role } = {}) => {
+    socket.on('game-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, role } = {}) => {
         if (role) onlineRole = role;
-        opponentName = onlineRole === 'p1' ? (p2Name || '') : (p1Name || '');
+        opponentName   = onlineRole === 'p1' ? (p2Name   || '') : (p1Name   || '');
+        opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
         onlineMode = true;
         hideLobby();
         applyPlayerNames();
@@ -584,8 +587,9 @@ function initSocket(errorElId, callback) {
     socket.on('room-error', msg => showLobbyError(errorElId, msg));
 
     socket.on('opponent-left', () => {
-        onlineMode   = false;
-        opponentName = '';
+        onlineMode     = false;
+        opponentName   = '';
+        opponentAvatar = '';
         gameState.gameOver = true;
         const s = document.getElementById('status');
         s.textContent = 'Opponent disconnected';
@@ -686,19 +690,38 @@ function getMyName() {
     return localStorage.getItem('choridor_player_name')?.trim() || '';
 }
 
+function setPlayerAvatar(slot, url) {
+    const img  = document.getElementById(`${slot}-avatar-img`);
+    if (!img || !url) return;
+    img.src = url;
+    img.classList.remove('hidden');
+}
+
+function clearPlayerAvatars() {
+    ['p1', 'p2'].forEach(slot => {
+        const img = document.getElementById(`${slot}-avatar-img`);
+        if (img) { img.src = ''; img.classList.add('hidden'); }
+    });
+}
+
 function applyPlayerNames() {
     const name = getMyName();
     if (onlineMode) {
         if (onlineRole === 'p1') {
             document.getElementById('p1-name').textContent = name || 'Player 1';
             document.getElementById('p2-name').textContent = opponentName || 'Opponent';
+            setPlayerAvatar('p1', myAvatar);
+            setPlayerAvatar('p2', opponentAvatar);
         } else {
             document.getElementById('p1-name').textContent = opponentName || 'Opponent';
             document.getElementById('p2-name').textContent = name || 'Player 2';
+            setPlayerAvatar('p1', opponentAvatar);
+            setPlayerAvatar('p2', myAvatar);
         }
     } else {
         document.getElementById('p1-name').textContent = name || 'Player 1';
         document.getElementById('p2-name').textContent = 'Player 2';
+        clearPlayerAvatars();
     }
 }
 
@@ -769,7 +792,7 @@ document.getElementById('btn-discord-play')?.addEventListener('click', () => {
     playSound('Select');
     setConnectingBtn('btn-discord-play');
     initSocket('discord-error', () => {
-        socket.emit('join-activity', { instanceId: discordInstanceId, name: getMyName() });
+        socket.emit('join-activity', { instanceId: discordInstanceId, name: getMyName(), avatarUrl: myAvatar });
         socket.once('activity-waiting', () => {
             const btn = document.getElementById('btn-discord-play');
             if (btn) { btn.querySelector('span').textContent = 'Waiting for opponent…'; btn.disabled = true; }
@@ -822,7 +845,7 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
     playSound('Select');
     if (onlineMode) {
         // In online mode, go back to lobby for a new game
-        onlineMode = false; onlineRole = null; opponentName = '';
+        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
         socket?.disconnect(); socket = null;
         document.getElementById('win-overlay').classList.add('hidden');
         document.getElementById('lobby-overlay').classList.remove('hidden');
@@ -836,7 +859,7 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
 document.getElementById('new-game-btn').addEventListener('click', () => {
     playSound('Select');
     if (onlineMode) {
-        onlineMode = false; onlineRole = null; opponentName = '';
+        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
         socket?.disconnect(); socket = null;
         document.getElementById('win-overlay').classList.add('hidden');
         document.getElementById('lobby-overlay').classList.remove('hidden');
@@ -863,7 +886,7 @@ document.getElementById('mute-btn').addEventListener('click', () => {
 
 document.getElementById('change-mode-btn').addEventListener('click', () => {
     playSound('Select');
-    onlineMode = false; onlineRole = null; opponentName = '';
+    onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
     socket?.disconnect(); socket = null;
     document.getElementById('win-overlay').classList.add('hidden');
     document.getElementById('lobby-overlay').classList.remove('hidden');
@@ -885,6 +908,24 @@ try {
         sandboxed: false,
         targetApplicationId: null
     }]);
+    try {
+        const { code } = await sdk.commands.authorize({ scope: ['identify'], response_type: 'code' });
+        const res  = await fetch('/api/auth/discord', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code }),
+        });
+        const data = await res.json();
+        if (data.username) {
+            myAvatar = data.avatarUrl || '';
+            if (!localStorage.getItem('choridor_player_name')) {
+                localStorage.setItem('choridor_player_name', data.username);
+                const dni = document.getElementById('discord-name-input');
+                if (dni) dni.value = data.username;
+                if (nameInput) nameInput.value = data.username;
+            }
+        }
+    } catch { /* OAuth declined or unavailable */ }
 } catch { /* not in Discord, or SDK unavailable */ }
 
 // ─── Init ─────────────────────────────────────────────────────────────────
