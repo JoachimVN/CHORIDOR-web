@@ -103,6 +103,21 @@
                 <button class="win-btn" id="btn-join-confirm">Join Game</button>
                 <button class="lobby-back" id="btn-join-back">← Back</button>
             </div>
+
+            <div id="lview-discord" class="lobby-view hidden">
+                <p class="lobby-subtitle">Play with a friend</p>
+                <div class="lobby-name-wrap">
+                    <input type="text" id="discord-name-input" class="lobby-name-input" placeholder="Your name" maxlength="20" autocomplete="off" spellcheck="false">
+                </div>
+                <button class="win-action-btn" id="btn-discord-play">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    <span>Play</span>
+                </button>
+                <p class="lobby-error hidden" id="discord-error"></p>
+                <button class="lobby-back hidden" id="btn-discord-cancel">← Cancel</button>
+            </div>
         </div>
     </div>
 

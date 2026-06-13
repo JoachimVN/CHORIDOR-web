@@ -65,6 +65,9 @@ let onlineRole   = null;   // 'p1' | 'p2' | null
 let onlineMode   = false;
 let opponentName = '';
 
+const isDiscord       = location.hostname.endsWith('.discordsays.com');
+let discordInstanceId = null;
+
 function isMyTurn() {
     return !onlineMode || gameState.currentPlayer === onlineRole;
 }
@@ -567,7 +570,8 @@ function initSocket(errorElId, callback) {
 
     socket.on('room-joined', () => { onlineRole = 'p2'; });
 
-    socket.on('game-start', ({ p1Name, p2Name } = {}) => {
+    socket.on('game-start', ({ p1Name, p2Name, role } = {}) => {
+        if (role) onlineRole = role;
         opponentName = onlineRole === 'p1' ? (p2Name || '') : (p1Name || '');
         onlineMode = true;
         hideLobby();
@@ -717,6 +721,18 @@ if (joinNameInput) {
 }
 
 applyPlayerNames();
+if (isDiscord) showLobbyView('lview-discord');
+
+const discordNameInput = document.getElementById('discord-name-input');
+if (discordNameInput) {
+    discordNameInput.value = savedName;
+    discordNameInput.addEventListener('input', () => {
+        const val = discordNameInput.value.trim();
+        if (val) localStorage.setItem('choridor_player_name', val);
+        else localStorage.removeItem('choridor_player_name');
+        if (nameInput) nameInput.value = discordNameInput.value;
+    });
+}
 
 document.getElementById('btn-local').addEventListener('click', () => { playSound('Select'); applyPlayerNames(); hideLobby(); });
 
@@ -747,6 +763,28 @@ document.getElementById('btn-copy-link').addEventListener('click', () => {
         label.textContent = 'Copied!';
         setTimeout(() => { label.textContent = 'Copy Invite Link'; }, 2000);
     });
+});
+
+document.getElementById('btn-discord-play')?.addEventListener('click', () => {
+    playSound('Select');
+    setConnectingBtn('btn-discord-play');
+    initSocket('discord-error', () => {
+        socket.emit('join-activity', { instanceId: discordInstanceId, name: getMyName() });
+        socket.once('activity-waiting', () => {
+            const btn = document.getElementById('btn-discord-play');
+            if (btn) { btn.querySelector('span').textContent = 'Waiting for opponent…'; btn.disabled = true; }
+            document.getElementById('btn-discord-cancel')?.classList.remove('hidden');
+        });
+    });
+});
+
+document.getElementById('btn-discord-cancel')?.addEventListener('click', () => {
+    playSound('Select');
+    socket?.disconnect(); socket = null;
+    const btn = document.getElementById('btn-discord-play');
+    if (btn) { btn.querySelector('span').textContent = 'Play'; btn.disabled = false; }
+    document.getElementById('btn-discord-cancel')?.classList.add('hidden');
+    document.getElementById('discord-error')?.classList.add('hidden');
 });
 
 document.getElementById('btn-join-confirm').addEventListener('click', () => {
@@ -788,7 +826,7 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
         socket?.disconnect(); socket = null;
         document.getElementById('win-overlay').classList.add('hidden');
         document.getElementById('lobby-overlay').classList.remove('hidden');
-        showLobbyView('lview-mode');
+        showLobbyView(isDiscord ? 'lview-discord' : 'lview-mode');
         resetGame();
     } else {
         resetGame();
@@ -802,7 +840,7 @@ document.getElementById('new-game-btn').addEventListener('click', () => {
         socket?.disconnect(); socket = null;
         document.getElementById('win-overlay').classList.add('hidden');
         document.getElementById('lobby-overlay').classList.remove('hidden');
-        showLobbyView('lview-mode');
+        showLobbyView(isDiscord ? 'lview-discord' : 'lview-mode');
     }
     resetGame();
 });
@@ -829,7 +867,7 @@ document.getElementById('change-mode-btn').addEventListener('click', () => {
     socket?.disconnect(); socket = null;
     document.getElementById('win-overlay').classList.add('hidden');
     document.getElementById('lobby-overlay').classList.remove('hidden');
-    showLobbyView('lview-mode');
+    showLobbyView(isDiscord ? 'lview-discord' : 'lview-mode');
     applyPlayerNames();
     resetGame();
 });
@@ -840,6 +878,7 @@ try {
     const { DiscordSDK } = await import('https://esm.sh/@discord/embedded-app-sdk@1');
     const sdk = new DiscordSDK('1515199692793843712');
     await sdk.ready();
+    discordInstanceId = sdk.instanceId;
     sdk.patchUrlMappings([{
         prefix: '/api',
         target: 'choridor-web-production.up.railway.app',
