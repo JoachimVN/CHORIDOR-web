@@ -1379,12 +1379,8 @@ buildWallBoxes();
 updateWallCounts();
 updateStatus();
 
-// Animations: default on, but respect a saved choice or the OS reduced-motion setting
-{
-    const saved  = localStorage.getItem('choridor_anim');
-    const reduce = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    setAnimEnabled(saved === null ? !reduce : saved === '1', true);
-}
+// Animations: off by default; only on when the player has explicitly enabled them
+setAnimEnabled(localStorage.getItem('choridor_anim') === '1', true);
 
 // Auto-enable tap mode on touch-primary devices (no hover, coarse pointer)
 {
