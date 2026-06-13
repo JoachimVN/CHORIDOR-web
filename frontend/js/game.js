@@ -66,6 +66,10 @@ let pawnAnims  = [];    // active pawn slide / jump animations
 let wallAnims  = [];    // active wall grow-in animations
 let _animId    = null;  // shared rAF id driving all board animations
 
+const PAWN_MOVE_MS  = 200;
+const PAWN_JUMP_MS  = 300;
+const WALL_PLACE_MS = 210;
+
 // ─── Control-button animation state ───────────────────────────────────────
 
 let flipAnimating  = false;
@@ -162,8 +166,8 @@ function drawWalls() {
         if (anim) {
             const p = Math.min((now - anim.t0) / anim.dur, 1);
             ctx.shadowColor = color;
-            ctx.shadowBlur  = 18 * (1 - p);          // glow flash that fades out
-            fillWall(wall.row, wall.col, wall.orientation, easeOutBack(p));
+            ctx.shadowBlur  = 10 * (1 - p);          // soft glow flash that fades out
+            fillWall(wall.row, wall.col, wall.orientation, easeOutBackSoft(p));
         } else {
             fillWall(wall.row, wall.col, wall.orientation);
         }
@@ -221,13 +225,13 @@ function drawPawns() {
             cx = fx + (tx - fx) * e;
             cy = fy + (ty - fy) * e;
             const hop = Math.sin(Math.PI * p);
-            if (a.isJump) { cy += up * hop * CELL_SIZE * 0.5; r = radius * (1 + hop * 0.12); }
-            else          { r = radius * (1 + hop * 0.05); }
+            if (a.isJump) { cy += up * hop * CELL_SIZE * 0.36; r = radius * (1 + hop * 0.08); }
+            else          { r = radius * (1 + hop * 0.03); }
             glow = hop;
         }
 
         ctx.save();
-        if (glow > 0) { ctx.shadowColor = color; ctx.shadowBlur = 10 * glow; }
+        if (glow > 0) { ctx.shadowColor = color; ctx.shadowBlur = 6 * glow; }
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -238,6 +242,12 @@ function drawPawns() {
 
 function easeOutBack(t) {
     const c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+// Gentler overshoot for placements that should feel calm, not bouncy
+function easeOutBackSoft(t) {
+    const c1 = 0.9, c3 = c1 + 1;
     return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
 
@@ -504,13 +514,13 @@ function startPawnAnim(player, from, to, isJump) {
         player, isJump,
         fromRow: from.row, fromCol: from.col,
         toRow: to.row, toCol: to.col,
-        t0: performance.now(), dur: isJump ? 380 : 250
+        t0: performance.now(), dur: isJump ? PAWN_JUMP_MS : PAWN_MOVE_MS
     });
     ensureAnimLoop();
 }
 
 function startWallAnim(wallKey) {
-    wallAnims.push({ wallKey, t0: performance.now(), dur: 260 });
+    wallAnims.push({ wallKey, t0: performance.now(), dur: WALL_PLACE_MS });
     ensureAnimLoop();
 }
 
@@ -576,7 +586,7 @@ function movePawn(row, col) {
     playSound(isJump ? 'Jump' : 'Move');
     if (socket && onlineMode) socket.emit('move', { type: 'pawn', row, col });
     startPawnAnim(mover, from, { row, col }, isJump);
-    if (checkWin(isJump ? 380 : 250)) return;
+    if (checkWin(isJump ? PAWN_JUMP_MS : PAWN_MOVE_MS)) return;
     gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateStatus();
     updateLegalMoves();
@@ -616,7 +626,7 @@ function applyOpponentPawnMove(data) {
     else                gameState.p2Pawn = { row: data.row, col: data.col };
     playSound(isJump ? 'Jump' : 'Move');
     startPawnAnim(mover, from, { row: data.row, col: data.col }, isJump);
-    if (checkWin(isJump ? 380 : 250)) return;
+    if (checkWin(isJump ? PAWN_JUMP_MS : PAWN_MOVE_MS)) return;
     gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateStatus();
     updateLegalMoves();
