@@ -308,8 +308,14 @@ function drawHoverPreview(color) {
 function drawWallPreview() {
     if (!canPreviewWall()) return;
     const color = gameState.currentPlayer === 'p1' ? P1_COLOR : P2_COLOR;
-    if (tapPreview) drawTapPreview(color);
-    else            drawHoverPreview(color);
+    if (!tapPreview) { drawHoverPreview(color); return; }
+
+    drawTapPreview(color);
+    // While a wall is locked, still show a faint hover preview on other slots
+    const onLocked = hoverState.wallRow === tapPreview.row &&
+                     hoverState.wallCol === tapPreview.col &&
+                     hoverState.wallOrientation === tapPreview.orientation;
+    if (hoverState.wallRow !== null && !onLocked) drawHoverPreview(color);
 }
 
 function render() {
