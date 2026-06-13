@@ -211,7 +211,7 @@ button:active {
     color: #C8CCDC;
 }
 
-/* ─── Bottom-bar controls — tactile, animated ─────────────────────────── */
+/* Bottom-bar controls, tactile and animated */
 .controls button {
     height: 4.4vh;
     min-height: 38px;
@@ -221,10 +221,10 @@ button:active {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: #9098B6;
-    background: linear-gradient(180deg, #232739, #191C2A);
-    border: 1px solid #2E3250;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    color: #AEB6D2;
+    background: #1B1F2E;
+    border: 1px solid #2A3047;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
                 background 0.2s ease, border-color 0.2s ease,
                 box-shadow 0.2s ease, color 0.2s ease;
@@ -238,25 +238,21 @@ button:active {
 
 .controls button:hover {
     transform: translateY(-2px);
-    color: #D4D8E6;
-    border-color: #3E4470;
-    background: linear-gradient(180deg, #2A2F44, #1E2230);
-    box-shadow: 0 7px 18px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    color: #EAEDF6;
+    background: #232A40;
+    border-color: rgba(62, 104, 168, 0.7);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(62, 104, 168, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .controls button:active {
     transform: translateY(0) scale(0.93);
-    color: #D4D8E6;
-    background: linear-gradient(180deg, #1E2230, #15182A);
-    border-color: #3E4470;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    color: #EAEDF6;
+    background: #161926;
+    border-color: rgba(62, 104, 168, 0.6);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
     transition-duration: 0.08s;
-}
-
-#new-game-btn:active {
-    color: #FFFFFF;
-    background: linear-gradient(180deg, #335B95, #2C5085);
-    border-color: #4C7AC0;
 }
 
 .controls button svg {
@@ -266,30 +262,63 @@ button:active {
     transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
 }
 
-.controls .icon-btn:hover svg { color: #D4D8E6; }
+.controls .icon-btn:hover svg { color: #EAEDF6; }
 
-/* New Game — primary blue action */
+/* New Game, primary blue action */
 #new-game-btn {
-    color: #EAF0FA;
-    background: linear-gradient(180deg, #3E68A8, #335B95);
-    border-color: #4C7AC0;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    color: #EAF1FB;
+    background: linear-gradient(180deg, #4374B8, #37659F);
+    border-color: #5183C4;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 #new-game-btn:hover {
     color: #FFFFFF;
-    background: linear-gradient(180deg, #4A78C0, #3E68A8);
-    border-color: #5E8AD2;
-    box-shadow: 0 7px 20px rgba(62, 104, 168, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: linear-gradient(180deg, #4E80C6, #4374B8);
+    border-color: #6A97D6;
+    box-shadow: 0 7px 20px rgba(62, 104, 168, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
-/* Mute — red tint while muted */
+#new-game-btn:active {
+    color: #FFFFFF;
+    background: linear-gradient(180deg, #37659F, #305892);
+    border-color: #4C7AC0;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+/* Confirm-walls toggle while selected (the blue), plus its hover variant */
+.icon-btn.tap-active {
+    color: #C3D6F4;
+    background: linear-gradient(180deg, rgba(62, 104, 168, 0.34), rgba(62, 104, 168, 0.18));
+    border-color: rgba(90, 140, 210, 0.8);
+    box-shadow: 0 0 14px rgba(62, 104, 168, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.icon-btn.tap-active svg { color: #C3D6F4; }
+
+.icon-btn.tap-active:hover {
+    transform: translateY(-2px);
+    color: #EAF1FB;
+    background: linear-gradient(180deg, rgba(78, 128, 198, 0.5), rgba(62, 104, 168, 0.3));
+    border-color: rgba(122, 168, 230, 0.95);
+    box-shadow: 0 6px 18px rgba(62, 104, 168, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.icon-btn.tap-active:hover svg { color: #EAF1FB; }
+
+.icon-btn.tap-active:active {
+    transform: translateY(0) scale(0.93);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+/* Mute, red tint while muted */
 #mute-btn.muted {
-    border-color: rgba(158, 74, 64, 0.55);
-    background: linear-gradient(180deg, rgba(158, 74, 64, 0.22), rgba(158, 74, 64, 0.08));
+    color: #E0998C;
+    border-color: rgba(158, 74, 64, 0.6);
+    background: linear-gradient(180deg, rgba(158, 74, 64, 0.26), rgba(158, 74, 64, 0.1));
 }
 
-#mute-btn.muted svg { color: #D08577; }
+#mute-btn.muted svg { color: #E0998C; }
 
 @keyframes mute-pop {
     0%   { transform: scale(1); }
@@ -858,16 +887,6 @@ button:active {
 
 /* ─── Tap-to-preview mode ─────────────────────────────────────────────── */
 
-/* Toggle button active state — distinct blue glow so it reads as "engaged" */
-.icon-btn.tap-active {
-    background: rgba(62, 104, 168, 0.2);
-    border-color: rgba(62, 104, 168, 0.6);
-    box-shadow: 0 0 12px rgba(62, 104, 168, 0.3);
-}
-
-.icon-btn.tap-active svg {
-    color: #8AAADA;
-}
 
 /* Confirm bar — overlays the bottom bar, replacing status + controls */
 .tap-confirm-hint {
