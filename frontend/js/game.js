@@ -713,9 +713,13 @@ function updateRematchBtn(state) {
     rematchState = state;
     const btn = document.getElementById('btn-rematch');
     if (!btn) return;
-    btn.className = 'win-btn' + (state === 'waiting' ? ' waiting' : state === 'incoming' ? ' incoming' : '');
-    btn.textContent = state === 'waiting' ? 'Waiting…' : state === 'incoming' ? 'Accept Rematch!' : 'Rematch';
-    btn.disabled = false;
+    let modifier = '';
+    let label    = 'Rematch';
+    if (state === 'waiting')  { modifier = ' waiting';  label = 'Waiting…'; }
+    if (state === 'incoming') { modifier = ' incoming'; label = 'Accept Rematch!'; }
+    btn.className   = 'win-btn' + modifier;
+    btn.textContent = label;
+    btn.disabled    = false;
 }
 
 function setPlayerAvatar(slot, url) {
