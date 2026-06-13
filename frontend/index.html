@@ -56,7 +56,7 @@
                     <a href="tos.html" id="btn-tos">Terms</a>
                     <span>·</span>
                     <a href="privacy.html" id="btn-privacy">Privacy</a>
-                    <span class="lobby-version">v1.1.1</span>
+                    <span class="lobby-version">v1.2.0</span>
                 </div>
             </div>
 
@@ -167,9 +167,26 @@
 
         <div class="board-wrapper">
             <canvas id="gameBoard"></canvas>
+            <output id="tap-toast" class="tap-toast" aria-live="polite" aria-hidden="true"></output>
         </div>
 
         <div class="bottom-bar">
+            <div id="tap-confirm-hint" class="tap-confirm-hint" aria-hidden="true">
+                <div class="tap-confirm-row">
+                    <button type="button" class="tap-confirm-btn tap-confirm-cancel" id="tap-confirm-no" aria-label="Cancel wall preview" title="Cancel">
+                        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="tap-confirm-btn tap-confirm-place" id="tap-confirm-yes" aria-label="Place wall here">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="4,12.5 9.5,18 20,6"/>
+                        </svg>
+                        <span class="tap-confirm-label">Place wall</span>
+                    </button>
+                </div>
+            </div>
             <div class="status-label" id="status">Player 1's Turn</div>
             <div class="controls">
                 <button id="flip-btn" class="icon-btn" title="Flip board">
@@ -183,6 +200,13 @@
                         <path d="M11 5 6 9H2v6h4l5 4V5z"/>
                         <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
                         <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                    </svg>
+                </button>
+                <button id="tap-mode-btn" class="icon-btn" type="button" aria-pressed="false" title="Tap-to-place walls — tap a slot, then confirm (handy on touchscreens)">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10 9.5V4a2 2 0 0 1 4 0v8"/>
+                        <path d="M14 8.5a2 2 0 0 1 4 0V12"/>
+                        <path d="M18 10.5a2 2 0 0 1 4 0V15a7 7 0 0 1-7 7h-1.5a6 6 0 0 1-4.24-1.76l-4.6-4.6a2 2 0 0 1 2.83-2.83L10 14.5"/>
                     </svg>
                 </button>
                 <button id="change-mode-btn">Change Mode</button>
