@@ -973,7 +973,7 @@ try {
         if (data.username) {
             myAvatar = data.avatarUrl || '';
             if (!localStorage.getItem('choridor_player_name')) {
-                const safeName = String(data.username).trim().slice(0, 20);
+                const safeName = String(data.username).replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, 20);
                 localStorage.setItem('choridor_player_name', safeName);
                 const dni = document.getElementById('discord-name-input');
                 if (dni) dni.value = safeName;
