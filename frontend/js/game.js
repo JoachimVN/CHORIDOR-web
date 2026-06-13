@@ -66,6 +66,7 @@ let onlineMode     = false;
 let opponentName   = '';
 let opponentAvatar = '';
 let myAvatar       = '';
+let rematchState   = 'idle'; // 'idle' | 'waiting' | 'incoming'
 
 const isDiscord       = location.hostname.endsWith('.discordsays.com');
 let discordInstanceId = null;
@@ -504,6 +505,11 @@ function showWinScreen(winner, playerClass) {
     card.getBoundingClientRect();
     card.style.animation = '';
 
+    document.getElementById('play-again-btn').classList.toggle('hidden', onlineMode);
+    document.getElementById('btn-rematch').classList.toggle('hidden', !onlineMode);
+    document.getElementById('btn-leave').classList.toggle('hidden', !onlineMode);
+    if (onlineMode) updateRematchBtn('idle');
+
     document.getElementById('win-overlay').classList.remove('hidden');
 }
 
@@ -594,6 +600,18 @@ function initSocket(errorElId, callback) {
         const s = document.getElementById('status');
         s.textContent = 'Opponent disconnected';
         s.className   = 'status-label';
+    });
+
+    socket.on('rematch-requested', () => updateRematchBtn('incoming'));
+    socket.on('rematch-cancelled', () => updateRematchBtn('idle'));
+
+    socket.on('rematch-start', ({ p1Name, p2Name, p1Avatar, p2Avatar } = {}) => {
+        onlineRole     = onlineRole === 'p1' ? 'p2' : 'p1';
+        opponentName   = onlineRole === 'p1' ? (p2Name   || '') : (p1Name   || '');
+        opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
+        document.getElementById('win-overlay').classList.add('hidden');
+        applyPlayerNames();
+        resetGame();
     });
 }
 
@@ -688,6 +706,15 @@ if (nameInput) nameInput.value = savedName;
 
 function getMyName() {
     return localStorage.getItem('choridor_player_name')?.trim() || '';
+}
+
+function updateRematchBtn(state) {
+    rematchState = state;
+    const btn = document.getElementById('btn-rematch');
+    if (!btn) return;
+    btn.className = 'win-btn' + (state === 'waiting' ? ' waiting' : state === 'incoming' ? ' incoming' : '');
+    btn.textContent = state === 'waiting' ? 'Waiting…' : state === 'incoming' ? 'Accept Rematch!' : 'Rematch';
+    btn.disabled = false;
 }
 
 function setPlayerAvatar(slot, url) {
@@ -808,6 +835,28 @@ document.getElementById('btn-discord-cancel')?.addEventListener('click', () => {
     if (btn) { btn.querySelector('span').textContent = 'Play'; btn.disabled = false; }
     document.getElementById('btn-discord-cancel')?.classList.add('hidden');
     document.getElementById('discord-error')?.classList.add('hidden');
+});
+
+document.getElementById('btn-rematch')?.addEventListener('click', () => {
+    playSound('Select');
+    if (rematchState === 'idle' || rematchState === 'incoming') {
+        socket?.emit('rematch-request');
+        updateRematchBtn('waiting');
+    } else if (rematchState === 'waiting') {
+        socket?.emit('rematch-cancel');
+        updateRematchBtn('idle');
+    }
+});
+
+document.getElementById('btn-leave')?.addEventListener('click', () => {
+    playSound('Select');
+    onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
+    socket?.disconnect(); socket = null;
+    document.getElementById('win-overlay').classList.add('hidden');
+    document.getElementById('lobby-overlay').classList.remove('hidden');
+    showLobbyView(isDiscord ? 'lview-discord' : 'lview-mode');
+    applyPlayerNames();
+    resetGame();
 });
 
 document.getElementById('btn-join-confirm').addEventListener('click', () => {
