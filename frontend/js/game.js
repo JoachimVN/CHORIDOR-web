@@ -423,9 +423,10 @@ function handleTapWall(row, col, orientation) {
     if (cp === 'p2' && gameState.wallCounts.p2 === 0) return;
 
     if (tapPreview && tapPreview.row === row && tapPreview.col === col && tapPreview.orientation === orientation) {
-        // Second tap on same spot → confirm placement
+        // Second tap on same spot: confirm. The preview already grew in,
+        // so skip the board grow animation to avoid playing it twice.
         clearTapPreview();
-        placeWall(row, col, orientation);
+        placeWall(row, col, orientation, false);
     } else {
         // First tap or different spot → lock preview
         const wallKey = JSON.stringify({ row, col, orientation });
@@ -592,7 +593,8 @@ function movePawn(row, col) {
     updateLegalMoves();
 }
 
-function placeWall(row, col, orientation) {
+// animateBoardWall=false when confirming a previewed wall (it already grew in)
+function placeWall(row, col, orientation, animateBoardWall = true) {
     if (gameState.gameOver) return;
     const mover = gameState.currentPlayer;
     if (mover === 'p1' && gameState.wallCounts.p1 === 0) return;
@@ -610,7 +612,7 @@ function placeWall(row, col, orientation) {
 
     playSound('Wall');
     if (socket && onlineMode) socket.emit('move', { type: 'wall', row, col, orientation });
-    startWallAnim(wallKey);
+    if (animateBoardWall) startWallAnim(wallKey);
     animateWallSpend(mover);
     gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateWallCounts();
@@ -1322,7 +1324,7 @@ document.getElementById('tap-confirm-yes')?.addEventListener('click', e => {
     if (tapPreview && tapMode && isMyTurn() && !gameState.gameOver) {
         const { row, col, orientation } = tapPreview;
         clearTapPreview();
-        placeWall(row, col, orientation);
+        placeWall(row, col, orientation, false);
     }
 });
 
