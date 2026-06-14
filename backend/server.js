@@ -81,7 +81,7 @@ function offerSpectatorPromotion(room, io, code, slot, steppingAsideId = null) {
     };
 
     io.sockets.sockets.get(remainingId)
-        ?.emit('spectator-offer', { name: spectator.name, avatarUrl: spectator.avatarUrl });
+        ?.emit('spectator-offer', { name: spectator.name, avatarUrl: spectator.avatarUrl, opponentSteppingAside: !!steppingAsideId });
     io.sockets.sockets.get(spectator.socketId)
         ?.emit('spectator-slot-offer', { opponentName: remainingName });
 

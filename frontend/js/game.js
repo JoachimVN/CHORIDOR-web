@@ -1104,8 +1104,14 @@ function initSocket(errorElId, callback) {
     });
 
     // Shown to a player when offered to play with a queued spectator
-    socket.on('spectator-offer', ({ name, avatarUrl } = {}) => {
+    socket.on('spectator-offer', ({ name, avatarUrl, opponentSteppingAside } = {}) => {
         document.getElementById('spectator-offer-name').textContent = name || 'spectator';
+        if (!document.getElementById('win-overlay').classList.contains('hidden')) {
+            document.getElementById('win-overlay').classList.add('hidden');
+            document.getElementById('win-footer').classList.remove('hidden');
+        }
+        if (rematchState === 'waiting') { socket?.emit('rematch-cancel'); updateRematchBtn('idle'); }
+        if (opponentSteppingAside) showToast('Opponent is stepping aside');
         document.getElementById('spectator-offer-bar').classList.remove('hidden');
         document.getElementById('discord-rejoin-bar').classList.add('hidden');
     });
@@ -1113,6 +1119,9 @@ function initSocket(errorElId, callback) {
     // Shown to the spectator when a slot opens up
     socket.on('spectator-slot-offer', ({ opponentName } = {}) => {
         document.getElementById('spectator-slot-opponent').textContent = opponentName || 'opponent';
+        if (!document.getElementById('win-overlay').classList.contains('hidden')) {
+            document.getElementById('win-overlay').classList.add('hidden');
+        }
         document.getElementById('spectator-slot-bar').classList.remove('hidden');
     });
 
@@ -1145,7 +1154,7 @@ function initSocket(errorElId, callback) {
         resetGame();
         document.getElementById('win-overlay').classList.add('hidden');
         document.getElementById('lobby-overlay').classList.remove('hidden');
-        showLobbyView('lview-mode');
+        showLobbyView(isDiscord ? 'lview-discord' : 'lview-mode');
         applyPlayerNames();
     });
 
