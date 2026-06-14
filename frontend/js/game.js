@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.8.0';
+const APP_VERSION = 'v1.8.1';
 document.querySelectorAll('.lobby-version').forEach(el => { el.textContent = APP_VERSION; });
 
 const BOARD_SIZE = 9;
@@ -584,12 +584,10 @@ canvas.addEventListener('touchstart', e => {
     const t = e.touches[0];
     const { x, y, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
     dragState = { fromTouch: true, isDragging: false, startX: x, startY: y };
-    if (inHGap || inVGap) {
-        // Immediate snap preview when finger lands directly on a gap
-        hoverState = nearestWallToPoint(x, y);
-        render();
-        e.preventDefault();
-    }
+    // Always show snap preview immediately so the wall follows from first contact
+    hoverState = nearestWallToPoint(x, y);
+    render();
+    if (inHGap || inVGap) e.preventDefault(); // prevent scroll when starting on a gap
 }, { passive: false });
 
 canvas.addEventListener('touchmove', e => {
@@ -599,8 +597,8 @@ canvas.addEventListener('touchmove', e => {
     const { x, y } = clientToCell(t.clientX, t.clientY);
     const dx = x - dragState.startX, dy = y - dragState.startY;
     if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) dragState.isDragging = true;
-    if (!dragState.isDragging) return;
-    e.preventDefault();
+    if (dragState.isDragging) e.preventDefault();
+    // Always update preview — wall follows finger even before drag threshold
     const next = nearestWallToPoint(x, y);
     if (JSON.stringify(hoverState) !== JSON.stringify(next)) { hoverState = next; render(); }
 }, { passive: false });
@@ -609,7 +607,12 @@ canvas.addEventListener('touchend', e => {
     if (!dragState?.fromTouch) { dragState = null; return; }
     const wasDragging = dragState.isDragging;
     dragState = null;
-    if (!wasDragging) return; // short tap — let the synthetic click handle it normally
+    if (!wasDragging) {
+        // Short tap — clear the ghost preview and let the synthetic click handle it
+        hoverState = EMPTY_HOVER;
+        render();
+        return;
+    }
     _suppressNextClick = true;
     const t = e.changedTouches[0];
     const { x, y } = clientToCell(t.clientX, t.clientY);
@@ -685,6 +688,7 @@ function startWallAnim(wallKey) {
 function clearTapPreview() {
     tapPreview = null;
     tapMovePreview = null;
+    hoverState = EMPTY_HOVER;
     updateTapHint();
     render();
 }
