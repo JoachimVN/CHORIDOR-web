@@ -769,7 +769,9 @@ function updateStatus() {
     const status = document.getElementById('status');
     if (onlineMode) {
         const myTurn = isMyTurn();
-        status.textContent = myTurn ? 'Your turn' : "Opponent's turn";
+        const opp = opponentName;
+        const oppTurn = opp ? `${opp}'${opp.endsWith('s') ? '' : 's'} turn` : "Opponent's turn";
+        status.textContent = myTurn ? 'Your turn' : oppTurn;
         status.className   = `status-label ${gameState.currentPlayer}`;
     } else {
         const name = gameState.currentPlayer === 'p1'
