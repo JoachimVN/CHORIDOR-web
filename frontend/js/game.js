@@ -1431,11 +1431,6 @@ document.getElementById('btn-change-mode').addEventListener('click', () => {
     openSoftLobby(true);
 });
 
-document.getElementById('win-footer-change-mode').addEventListener('click', () => {
-    playSound('Select');
-    openSoftLobby(true);
-});
-
 document.getElementById('btn-join-confirm').addEventListener('click', () => {
     const code = document.getElementById('room-code-input').value.trim().toUpperCase();
     if (!code) return;
