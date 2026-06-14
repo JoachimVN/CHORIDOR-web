@@ -35,7 +35,8 @@ The desktop version is available at [JoachimVN/CHORIDOR](https://github.com/Joac
 - Pawn moves with jump logic, wall placement with path-check enforcement
 - **Local multiplayer** — two players on the same device
 - **Online multiplayer** — create a room, share a 3-character code, play with a friend anywhere
-- **Discord Activity** — play directly inside a Discord voice channel; supports spectators with a queue system
+- **Discord Activity** — play directly inside a Discord voice channel with Rich Presence
+- **Spectating queue** — players can watch an ongoing game and are promoted automatically when a player leaves
 - Dark-slate themed board with legal-move dot indicators and hover-preview for walls
 - Confirm mode for touch devices, board flip, animations, and sound effects
 - Win overlay with rematch support and Discord Rich Presence
@@ -59,6 +60,7 @@ The desktop version ([JoachimVN/CHORIDOR](https://github.com/JoachimVN/CHORIDOR)
     <td valign="top">
       Online multiplayer<br>
       Discord Activity<br>
+      Spectator queue<br>
       Plays in any browser, no install<br>
     </td>
   </tr>
