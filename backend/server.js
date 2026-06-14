@@ -20,7 +20,8 @@ app.use(express.static(path.join(__dirname, '../frontend'), {
     }
 }));
 
-// code -> { p1, p2, p1Name, p2Name, p1Avatar, p2Avatar, spectators, snapshot, rematchReady, instanceId }
+// code -> { p1, p2, p1Name, p2Name, p1Avatar, p2Avatar, spectators, snapshot, rematchReady, instanceId,
+//           pendingPromotion: null | { spectator, slot, accepted: Set, needed: [id,id], remainingId, steppingAsideId } }
 const rooms             = new Map();
 const pendingActivities = new Map(); // instanceId -> { socket, name, avatarUrl }
 const activityRooms     = new Map(); // instanceId -> code (for spectator lookup)
@@ -56,35 +57,77 @@ function applyMoveToSnapshot(snapshot, moverRole, data) {
     snapshot.currentPlayer = moverRole === 'p1' ? 'p2' : 'p1';
 }
 
-function promoteSpectatorToPlayer(room, io, code, isP1) {
-    let promoted = null;
-    let promotedSocket = null;
+// Emit spectator promotion offers to remaining/staying player and first spectator.
+// Returns false if no live spectators found.
+function offerSpectatorPromotion(room, io, code, slot, steppingAsideId = null) {
+    let spectator = null;
     while (room.spectators.length > 0) {
-        const candidate = room.spectators.shift();
-        const sock = io.sockets.sockets.get(candidate.socketId);
-        if (sock) { promoted = candidate; promotedSocket = sock; break; }
+        const candidate = room.spectators[0];
+        if (io.sockets.sockets.get(candidate.socketId)) { spectator = candidate; break; }
+        room.spectators.shift(); // stale socket, skip
     }
-    if (!promoted) return false;
+    if (!spectator) return false;
 
-    if (isP1) { room.p1 = promoted.socketId; room.p1Name = promoted.name; room.p1Avatar = promoted.avatarUrl; }
-    else      { room.p2 = promoted.socketId; room.p2Name = promoted.name; room.p2Avatar = promoted.avatarUrl; }
+    const remainingId   = slot === 'p1' ? room.p2 : room.p1;
+    const remainingName = slot === 'p1' ? room.p2Name : room.p1Name;
 
+    room.pendingPromotion = {
+        spectator,
+        slot,
+        accepted:        new Set(),
+        needed:          [remainingId, spectator.socketId],
+        remainingId,
+        steppingAsideId: steppingAsideId || null,
+    };
+
+    io.sockets.sockets.get(remainingId)
+        ?.emit('spectator-offer', { name: spectator.name, avatarUrl: spectator.avatarUrl });
+    io.sockets.sockets.get(spectator.socketId)
+        ?.emit('spectator-slot-offer', { opponentName: remainingName });
+
+    console.log(`Room ${code}: offered spectator promotion for ${slot}`);
+    return true;
+}
+
+// Complete an accepted promotion: move spectator into slot, notify all parties.
+function completePromotion(room, io, code) {
+    const { spectator, slot, remainingId, steppingAsideId } = room.pendingPromotion;
+    room.pendingPromotion = null;
+    room.spectators = room.spectators.filter(s => s.socketId !== spectator.socketId);
+
+    if (slot === 'p1') { room.p1 = spectator.socketId; room.p1Name = spectator.name; room.p1Avatar = spectator.avatarUrl; }
+    else               { room.p2 = spectator.socketId; room.p2Name = spectator.name; room.p2Avatar = spectator.avatarUrl; }
     room.snapshot = makeSnapshot();
 
-    promotedSocket.emit('become-player', {
-        role:     isP1 ? 'p1' : 'p2',
+    if (steppingAsideId) {
+        const stepSock = io.sockets.sockets.get(steppingAsideId);
+        stepSock?.emit('you-stepped-aside');
+        stepSock?.leave(code);
+        if (stepSock) stepSock.data.roomCode = null;
+    }
+
+    io.sockets.sockets.get(spectator.socketId)?.emit('become-player', {
+        role:     slot,
         p1Name:   room.p1Name, p2Name:   room.p2Name,
         p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
     });
 
-    const remainingSocket = io.sockets.sockets.get(isP1 ? room.p2 : room.p1);
-    if (remainingSocket) {
-        remainingSocket.emit('opponent-rejoined', { name: promoted.name, avatar: promoted.avatarUrl });
-    }
-
+    io.sockets.sockets.get(remainingId)?.emit('opponent-rejoined', { name: spectator.name, avatar: spectator.avatarUrl });
     io.to(code).emit('spectator-count', room.spectators.length);
-    console.log(`Room ${code}: spectator promoted to ${isP1 ? 'p1' : 'p2'}`);
-    return true;
+    console.log(`Room ${code}: spectator promoted to ${slot}`);
+}
+
+// Cancel a pending promotion and clean up.
+function cancelPromotion(room, io, code) {
+    if (!room.pendingPromotion) return;
+    const { spectator, remainingId, steppingAsideId, slot } = room.pendingPromotion;
+    room.pendingPromotion = null;
+
+    io.sockets.sockets.get(spectator.socketId)?.emit('spectator-offer-cancelled');
+    io.sockets.sockets.get(remainingId)?.emit('spectator-offer-cancelled');
+    if (steppingAsideId) io.sockets.sockets.get(steppingAsideId)?.emit('step-aside-declined');
+
+    return { slot, remainingId };
 }
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
@@ -128,7 +171,7 @@ io.on('connection', socket => {
 
     socket.on('create-room', ({ name } = {}) => {
         const code = makeCode();
-        rooms.set(code, { p1: socket.id, p2: null, p1Name: name || '', p1Avatar: '', spectators: [], snapshot: null, rematchReady: null, instanceId: null });
+        rooms.set(code, { p1: socket.id, p2: null, p1Name: name || '', p1Avatar: '', spectators: [], snapshot: null, rematchReady: null, instanceId: null, pendingPromotion: null });
         socket.data.roomCode = code;
         socket.join(code);
         socket.emit('room-created', { code, role: 'p1' });
@@ -139,7 +182,7 @@ io.on('connection', socket => {
         code = (code || '').trim().toUpperCase();
         const room = rooms.get(code);
         if (!room) { socket.emit('room-error', 'Room not found'); return; }
-        if (room.p2) {
+        if (room.p1 && room.p2) {
             // Room full - join as spectator
             const queuePos = room.spectators.push({ socketId: socket.id, name: name || '', avatarUrl: '' });
             socket.data.roomCode = code;
@@ -203,7 +246,7 @@ io.on('connection', socket => {
         p1Socket.data.pendingInstanceId = null;
         const code = makeCode();
         const snapshot = makeSnapshot();
-        rooms.set(code, { p1: p1Socket.id, p2: socket.id, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, spectators: [], snapshot, rematchReady: null, instanceId });
+        rooms.set(code, { p1: p1Socket.id, p2: socket.id, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, spectators: [], snapshot, rematchReady: null, instanceId, pendingPromotion: null });
         activityRooms.set(instanceId, code);
         p1Socket.data.roomCode          = code;
         socket.data.roomCode            = code;
@@ -258,6 +301,59 @@ io.on('connection', socket => {
         socket.to(code).emit('rematch-cancelled');
     });
 
+    // Player wants to step aside for the first queued spectator (after game end).
+    socket.on('step-aside', () => {
+        const code = socket.data.roomCode;
+        if (!code) return;
+        const room = rooms.get(code);
+        if (!room || room.pendingPromotion) return;
+
+        const isP1 = room.p1 === socket.id;
+        const isP2 = room.p2 === socket.id;
+        if (!isP1 && !isP2) return;
+
+        const slot = isP1 ? 'p1' : 'p2';
+        if (!offerSpectatorPromotion(room, io, code, slot, socket.id)) return;
+
+        socket.emit('step-aside-waiting');
+    });
+
+    // Accept a pending spectator promotion (used by both the remaining/staying player and the spectator).
+    socket.on('accept-spectator', () => {
+        const code = socket.data.roomCode;
+        if (!code) return;
+        const room = rooms.get(code);
+        if (!room?.pendingPromotion) return;
+
+        room.pendingPromotion.accepted.add(socket.id);
+        const { accepted, needed } = room.pendingPromotion;
+
+        if (needed.every(id => accepted.has(id))) {
+            completePromotion(room, io, code);
+        }
+    });
+
+    // Decline a pending spectator promotion.
+    socket.on('decline-spectator', () => {
+        const code = socket.data.roomCode;
+        if (!code) return;
+        const room = rooms.get(code);
+        if (!room?.pendingPromotion) return;
+
+        const { slot } = room.pendingPromotion;
+        cancelPromotion(room, io, code);
+
+        // If the slot was vacated by a disconnect, close the room
+        const slotEmpty = slot === 'p1' ? !room.p1 : !room.p2;
+        if (slotEmpty) {
+            const remainingId = slot === 'p1' ? room.p2 : room.p1;
+            io.sockets.sockets.get(remainingId)?.emit('opponent-left');
+            if (room.instanceId) activityRooms.delete(room.instanceId);
+            rooms.delete(code);
+            console.log(`Room ${code} closed after spectator offer declined`);
+        }
+    });
+
     socket.on('move', data => {
         const code = socket.data.roomCode;
         if (!code) return;
@@ -283,12 +379,48 @@ io.on('connection', socket => {
         const isP2 = room.p2 === socket.id;
 
         if (!isP1 && !isP2) {
-            room.spectators = room.spectators.filter(s => s.socketId !== socket.id);
-            io.to(code).emit('spectator-count', room.spectators.length);
+            // Spectator disconnected
+            if (room.pendingPromotion?.spectator.socketId === socket.id) {
+                // The offered spectator left - cancel and try next
+                const { slot, remainingId } = room.pendingPromotion;
+                cancelPromotion(room, io, code);
+                room.spectators = room.spectators.filter(s => s.socketId !== socket.id);
+                io.to(code).emit('spectator-count', room.spectators.length);
+
+                if (!offerSpectatorPromotion(room, io, code, slot)) {
+                    // No more spectators - close room if slot was empty
+                    const slotEmpty = slot === 'p1' ? !room.p1 : !room.p2;
+                    if (slotEmpty) {
+                        io.sockets.sockets.get(remainingId)?.emit('opponent-left');
+                        if (room.instanceId) activityRooms.delete(room.instanceId);
+                        rooms.delete(code);
+                        console.log(`Room ${code} closed, no spectators remaining`);
+                    }
+                }
+            } else {
+                room.spectators = room.spectators.filter(s => s.socketId !== socket.id);
+                io.to(code).emit('spectator-count', room.spectators.length);
+            }
             return;
         }
 
-        if (!promoteSpectatorToPlayer(room, io, code, isP1)) {
+        // A player disconnected
+        if (room.pendingPromotion) {
+            // Cancel any in-progress offer and close room
+            cancelPromotion(room, io, code);
+            socket.to(code).emit('opponent-left');
+            if (room.instanceId) activityRooms.delete(room.instanceId);
+            rooms.delete(code);
+            console.log(`Room ${code} closed (player left during pending promotion)`);
+            return;
+        }
+
+        // Vacate the slot and offer to spectators
+        if (isP1) room.p1 = null; else room.p2 = null;
+        const slot = isP1 ? 'p1' : 'p2';
+
+        if (!offerSpectatorPromotion(room, io, code, slot)) {
+            // No spectators - emit opponent-left and close
             socket.to(code).emit('opponent-left');
             if (room.instanceId) activityRooms.delete(room.instanceId);
             rooms.delete(code);

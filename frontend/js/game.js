@@ -895,6 +895,7 @@ function showWinScreen(winner, playerClass, delay = 0) {
     document.getElementById('play-again-btn').classList.toggle('hidden', onlineMode || spectatorMode);
     document.getElementById('btn-rematch').classList.toggle('hidden', !onlineMode || spectatorMode);
     document.getElementById('btn-change-mode').classList.toggle('hidden', !onlineMode || spectatorMode || isDiscord);
+    document.getElementById('btn-step-aside').classList.toggle('hidden', !onlineMode || spectatorMode || spectatorCount === 0);
     if (onlineMode) updateRematchBtn('idle');
     populateWinStats();
 
@@ -932,6 +933,8 @@ function resetGame() {
     document.getElementById('win-overlay').classList.add('hidden');
     document.getElementById('win-footer').classList.add('hidden');
     document.getElementById('discord-rejoin-bar').classList.add('hidden');
+    document.getElementById('spectator-offer-bar').classList.add('hidden');
+    document.getElementById('spectator-slot-bar').classList.add('hidden');
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
@@ -1071,6 +1074,9 @@ function initSocket(errorElId, callback) {
         spectatorCount = count;
         updateSpectatorCountUI(count);
         if (spectatorMode) updateSpectatorBanner(null);
+        if (gameState.gameOver && onlineMode && !spectatorMode) {
+            document.getElementById('btn-step-aside').classList.toggle('hidden', count === 0);
+        }
     });
 
     socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar } = {}) => {
@@ -1095,6 +1101,52 @@ function initSocket(errorElId, callback) {
         updateStatus();
         updateLegalMoves();
         render();
+    });
+
+    // Shown to a player when offered to play with a queued spectator
+    socket.on('spectator-offer', ({ name, avatarUrl } = {}) => {
+        document.getElementById('spectator-offer-name').textContent = name || 'spectator';
+        document.getElementById('spectator-offer-bar').classList.remove('hidden');
+        document.getElementById('discord-rejoin-bar').classList.add('hidden');
+    });
+
+    // Shown to the spectator when a slot opens up
+    socket.on('spectator-slot-offer', ({ opponentName } = {}) => {
+        document.getElementById('spectator-slot-opponent').textContent = opponentName || 'opponent';
+        document.getElementById('spectator-slot-bar').classList.remove('hidden');
+    });
+
+    socket.on('spectator-offer-cancelled', () => {
+        document.getElementById('spectator-offer-bar').classList.add('hidden');
+        document.getElementById('spectator-slot-bar').classList.add('hidden');
+        document.getElementById('btn-step-aside').classList.add('hidden');
+    });
+
+    // Step-aside accepted by server, waiting for the other parties
+    socket.on('step-aside-waiting', () => {
+        const btn = document.getElementById('btn-step-aside');
+        btn.textContent = 'Waiting…';
+        btn.disabled    = true;
+    });
+
+    // The other party declined - revert the step-aside button
+    socket.on('step-aside-declined', () => {
+        const btn = document.getElementById('btn-step-aside');
+        btn.textContent = 'Step aside';
+        btn.disabled    = false;
+    });
+
+    // This player stepped aside and the spectator was promoted
+    socket.on('you-stepped-aside', () => {
+        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
+        spectatorMode = false;
+        showToast('You stepped aside');
+        socket.disconnect(); socket = null;
+        resetGame();
+        document.getElementById('win-overlay').classList.add('hidden');
+        document.getElementById('lobby-overlay').classList.remove('hidden');
+        showLobbyView('lview-mode');
+        applyPlayerNames();
     });
 
     socket.on('game-surrendered', ({ winnerRole, winnerName } = {}) => {
@@ -1431,6 +1483,35 @@ function openSoftLobby(fromWin = false) {
 document.getElementById('btn-change-mode').addEventListener('click', () => {
     playSound('Select');
     openSoftLobby(true);
+});
+
+document.getElementById('btn-step-aside').addEventListener('click', () => {
+    playSound('Select');
+    socket?.emit('step-aside');
+});
+
+document.getElementById('spectator-offer-accept').addEventListener('click', () => {
+    playSound('Select');
+    document.getElementById('spectator-offer-bar').classList.add('hidden');
+    socket?.emit('accept-spectator');
+});
+
+document.getElementById('spectator-offer-decline').addEventListener('click', () => {
+    playSound('Select');
+    document.getElementById('spectator-offer-bar').classList.add('hidden');
+    socket?.emit('decline-spectator');
+});
+
+document.getElementById('spectator-slot-accept').addEventListener('click', () => {
+    playSound('Select');
+    document.getElementById('spectator-slot-bar').classList.add('hidden');
+    socket?.emit('accept-spectator');
+});
+
+document.getElementById('spectator-slot-decline').addEventListener('click', () => {
+    playSound('Select');
+    document.getElementById('spectator-slot-bar').classList.add('hidden');
+    socket?.emit('decline-spectator');
 });
 
 document.getElementById('discord-find-match-btn').addEventListener('click', () => {
