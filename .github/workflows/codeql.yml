@@ -21,6 +21,9 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: javascript
+          config: |
+            paths-ignore:
+              - frontend/js/vendor
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
