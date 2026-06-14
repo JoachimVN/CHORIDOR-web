@@ -25,9 +25,21 @@ The desktop version is available at [JoachimVN/CHORIDOR](https://github.com/Joac
 ## Screenshots
 
 <p align="center">
+    <img src="docs/screenshots/Lobby.png" alt="CHORIDOR main menu"/>
+    <br>
+    <em>Main menu</em>
+</p>
+
+<p align="center">
     <img src="docs/screenshots/Board.png" alt="CHORIDOR board mid-play"/>
     <br>
     <em>In-game board</em>
+</p>
+
+<p align="center">
+    <img src="docs/screenshots/Win.png" alt="CHORIDOR win overlay"/>
+    <br>
+    <em>Win screen</em>
 </p>
 
 ## Features
