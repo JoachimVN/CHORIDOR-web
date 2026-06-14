@@ -928,10 +928,13 @@ function initSocket(errorElId, callback) {
     socket.on('room-error', msg => showLobbyError(errorElId, msg));
 
     socket.on('opponent-left', () => {
-        onlineMode     = false;
+        // Keep onlineMode=true so New Game/Change Mode still route to the lobby
         opponentName   = '';
         opponentAvatar = '';
         gameState.gameOver = true;
+        hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
+        clearTapPreview();
+        render();
         const s = document.getElementById('status');
         s.textContent = 'Opponent disconnected';
         s.className   = 'status-label';
@@ -1145,12 +1148,6 @@ document.getElementById('btn-local').addEventListener('click', () => {
 
 document.getElementById('btn-online').addEventListener('click', () => {
     playSound('Select');
-    if (softLobby) {
-        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
-        socket?.disconnect(); socket = null;
-        softLobby = false; softLobbyRestoreWin = false;
-        resetGame();
-    }
     showLobbyView('lview-online');
 });
 document.getElementById('btn-online-back').addEventListener('click', () => {
@@ -1172,6 +1169,12 @@ document.getElementById('btn-lobby-back').addEventListener('click', () => {
 
 document.getElementById('btn-create').addEventListener('click', () => {
     playSound('Select');
+    if (softLobby) {
+        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
+        socket?.disconnect(); socket = null;
+        softLobby = false; softLobbyRestoreWin = false;
+        resetGame();
+    }
     setConnectingBtn('btn-create');
     initSocket('create-error', () => socket.emit('create-room', { name: getMyName() }));
 });
@@ -1271,6 +1274,12 @@ document.getElementById('btn-join-confirm').addEventListener('click', () => {
     const code = document.getElementById('room-code-input').value.trim().toUpperCase();
     if (!code) return;
     playSound('Select');
+    if (softLobby) {
+        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
+        socket?.disconnect(); socket = null;
+        softLobby = false; softLobbyRestoreWin = false;
+        resetGame();
+    }
     document.getElementById('join-error').classList.add('hidden');
     setConnectingBtn('btn-join-confirm');
     initSocket('join-error', () => socket.emit('join-room', { code, name: getMyName() }));
