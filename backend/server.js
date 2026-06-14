@@ -43,12 +43,12 @@ app.post('/auth/discord', express.json(), async (req, res) => {
                 client_id:     process.env.DISCORD_CLIENT_ID || '1515199692793843712',
                 client_secret: process.env.DISCORD_CLIENT_SECRET,
                 grant_type:    'authorization_code',
-                redirect_uri:  '',
+                redirect_uri:  process.env.DISCORD_REDIRECT_URI || 'https://1515199692793843712.discordsays.com/',
                 code,
             }).toString(),
         });
         const token = await tokenRes.json();
-        if (!token.access_token) return res.status(400).json({ error: 'Token exchange failed' });
+        if (!token.access_token) return res.status(400).json({ error: `Token exchange failed: ${JSON.stringify(token)}` });
 
         const userRes = await fetch('https://discord.com/api/users/@me', {
             headers: { Authorization: `Bearer ${token.access_token}` },
