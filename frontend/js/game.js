@@ -63,7 +63,8 @@ let hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow:
 // ─── Tap-to-preview state ─────────────────────────────────────────────────
 
 let tapMode    = false;
-let tapPreview = null;  // { row, col, orientation } | null while awaiting confirm
+let tapPreview     = null;  // { row, col, orientation } | null — wall pending confirm
+let tapMovePreview = null;  // { row, col } | null — move pending confirm
 let pawnAnims  = [];    // active pawn slide / jump animations
 let wallAnims  = [];    // active wall grow-in animations
 let _animId    = null;  // shared rAF id driving all board animations
@@ -187,10 +188,18 @@ function drawLegalMoves() {
     gameState.legalMoves.forEach(move => {
         const bx = move.col * STEP, by = move.row * STEP;
         const cx = bx + CELL_SIZE / 2, cy = by + CELL_SIZE / 2;
-        const isHovered = hoverState.moveRow === move.row && hoverState.moveCol === move.col;
+        const isHovered  = hoverState.moveRow === move.row && hoverState.moveCol === move.col;
+        const isSelected = tapMovePreview && tapMovePreview.row === move.row && tapMovePreview.col === move.col;
 
         ctx.fillStyle = color;
-        if (isHovered) {
+        if (isSelected) {
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(bx, by, CELL_SIZE, CELL_SIZE);
+            ctx.globalAlpha = 1.0;
+            ctx.beginPath();
+            ctx.arc(cx, cy, CELL_SIZE * 0.21, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (isHovered) {
             ctx.globalAlpha = 0.12;
             ctx.fillRect(bx, by, CELL_SIZE, CELL_SIZE);
             ctx.globalAlpha = 0.85;
@@ -378,6 +387,10 @@ function updateLegalMoves() {
             });
         }
     });
+    if (tapMovePreview && !gameState.legalMoves.some(m => m.row === tapMovePreview.row && m.col === tapMovePreview.col)) {
+        tapMovePreview = null;
+        updateTapHint();
+    }
     render();
 }
 
@@ -413,8 +426,12 @@ canvas.addEventListener('click', e => {
     const inVGap = offX >= CELL_SIZE && cellX < BOARD_SIZE - 1;
 
     if (!inHGap && !inVGap) {
-        clearTapPreview();
-        movePawn(cellY, cellX);
+        if (tapMode) {
+            handleTapMove(cellY, cellX);
+        } else {
+            clearTapPreview();
+            movePawn(cellY, cellX);
+        }
     } else if (tapMode) {
         handleTapWall(cellY, cellX, inHGap ? 'H' : 'V');
     } else {
@@ -430,10 +447,23 @@ function handleTapWall(row, col, orientation) {
     const wallKey = JSON.stringify({ row, col, orientation });
     if (gameState.walls.has(wallKey) || hasWallOverlap(row, col, orientation)) return;
     if (!wallKeepsPathsOpen(wallKey)) return;
+    tapMovePreview = null;
     tapPreview = { row, col, orientation, t0: performance.now() };
     playSound('Select');
     if (animEnabled) ensureAnimLoop(); else render();
     updateTapHint();
+}
+
+function handleTapMove(row, col) {
+    if (!gameState.legalMoves.some(m => m.row === row && m.col === col)) {
+        if (tapMovePreview || tapPreview) clearTapPreview();
+        return;
+    }
+    tapPreview = null;
+    tapMovePreview = { row, col };
+    playSound('Select');
+    updateTapHint();
+    render();
 }
 
 function computeHoverState(cellX, cellY, inHGap, inVGap) {
@@ -526,6 +556,7 @@ function startWallAnim(wallKey) {
 
 function clearTapPreview() {
     tapPreview = null;
+    tapMovePreview = null;
     updateTapHint();
     render();
 }
@@ -533,10 +564,12 @@ function clearTapPreview() {
 function updateTapHint() {
     const hint = document.getElementById('tap-confirm-hint');
     if (!hint) return;
-    const show = tapPreview && tapMode && !gameState.gameOver && isMyTurn();
+    const show = (tapPreview || tapMovePreview) && tapMode && !gameState.gameOver && isMyTurn();
     if (show) {
         hint.className = `tap-confirm-hint ${gameState.currentPlayer} visible`;
         hint.removeAttribute('aria-hidden');
+        const label = hint.querySelector('.tap-confirm-label');
+        if (label) label.textContent = tapMovePreview ? 'Move here' : 'Place wall';
     } else {
         hint.className = 'tap-confirm-hint';
         hint.setAttribute('aria-hidden', 'true');
@@ -566,7 +599,7 @@ function setTapMode(enabled) {
         btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
     }
     if (!enabled) clearTapPreview();
-    showToast(enabled ? 'Confirm walls: ON, pick a slot then confirm' : 'Confirm walls: OFF');
+    showToast(enabled ? 'Confirm mode: ON — tap a move or wall, then confirm' : 'Confirm mode: OFF');
     render();
 }
 
@@ -1473,10 +1506,15 @@ if (isDiscord) try {
 
 document.getElementById('tap-confirm-yes')?.addEventListener('click', e => {
     e.stopPropagation();
-    if (tapPreview && tapMode && isMyTurn() && !gameState.gameOver) {
+    if (!tapMode || !isMyTurn() || gameState.gameOver) return;
+    if (tapPreview) {
         const { row, col, orientation } = tapPreview;
         clearTapPreview();
         placeWall(row, col, orientation, false);
+    } else if (tapMovePreview) {
+        const { row, col } = tapMovePreview;
+        clearTapPreview();
+        movePawn(row, col);
     }
 });
 
