@@ -110,7 +110,7 @@ function setDiscordPresence(activity) {
     if (!discordSdk) return;
     clearTimeout(_presenceTimer);
     _presenceTimer = setTimeout(() => {
-        discordSdk.commands.setActivity(activity).catch(() => {});
+        discordSdk.commands.setActivity(activity).catch(err => console.warn('setActivity failed:', err));
     }, 500);
 }
 
@@ -986,7 +986,7 @@ function initSocket(errorElId, callback) {
         if (role) onlineRole = role;
         opponentName   = onlineRole === 'p1' ? (p2Name   || '') : (p1Name   || '');
         opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
-        matchStartTime = Date.now();
+        matchStartTime = Math.floor(Date.now() / 1000);
         matchRoomCode  = code || '';
         onlineMode = true;
         hideLobby();
@@ -1032,7 +1032,7 @@ function initSocket(errorElId, callback) {
         onlineRole     = onlineRole === 'p1' ? 'p2' : 'p1';
         opponentName   = onlineRole === 'p1' ? (p2Name   || '') : (p1Name   || '');
         opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
-        matchStartTime = Date.now();
+        matchStartTime = Math.floor(Date.now() / 1000);
         if (softLobby) {
             softLobby = false; softLobbyRestoreWin = false;
             document.getElementById('lobby-overlay').classList.add('hidden');
@@ -1072,7 +1072,7 @@ function initSocket(errorElId, callback) {
         onlineMode     = true;
         opponentName   = role === 'p1' ? (p2Name || '') : (p1Name || '');
         opponentAvatar = role === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
-        matchStartTime = Date.now();
+        matchStartTime = Math.floor(Date.now() / 1000);
         document.getElementById('p1-name').textContent = p1Name || 'Player 1';
         document.getElementById('p2-name').textContent = p2Name || 'Player 2';
         setPlayerAvatar('p1', p1Avatar || '');
