@@ -931,6 +931,7 @@ function resetGame() {
     };
     document.getElementById('win-overlay').classList.add('hidden');
     document.getElementById('win-footer').classList.add('hidden');
+    document.getElementById('discord-rejoin-bar').classList.add('hidden');
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
@@ -1005,7 +1006,7 @@ function initSocket(errorElId, callback) {
         opponentAvatar = '';
         if (isDiscord) {
             setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
-            socket.emit('join-activity', { instanceId: discordInstanceId, name: getMyName(), avatarUrl: myAvatar });
+            document.getElementById('discord-rejoin-bar').classList.remove('hidden');
         }
         gameState.gameOver = true;
         hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
@@ -1430,6 +1431,12 @@ function openSoftLobby(fromWin = false) {
 document.getElementById('btn-change-mode').addEventListener('click', () => {
     playSound('Select');
     openSoftLobby(true);
+});
+
+document.getElementById('discord-find-match-btn').addEventListener('click', () => {
+    playSound('Select');
+    document.getElementById('discord-rejoin-bar').classList.add('hidden');
+    socket?.emit('join-activity', { instanceId: discordInstanceId, name: getMyName(), avatarUrl: myAvatar });
 });
 
 document.getElementById('btn-join-confirm').addEventListener('click', () => {
