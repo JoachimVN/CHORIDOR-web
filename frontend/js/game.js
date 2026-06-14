@@ -430,19 +430,32 @@ function hasWall(orientation, row, col) {
     return gameState.walls.has(JSON.stringify({ row, col, orientation }));
 }
 
+// ─── Coordinate helper ────────────────────────────────────────────────────
+
+function clientToCell(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    let x = (clientX - rect.left) / boardScale;
+    let y = (clientY - rect.top)  / boardScale;
+    if (gameState.flipped) { x = BOARD_TOTAL - x; y = BOARD_TOTAL - y; }
+    const cellX  = Math.floor(x / STEP), cellY  = Math.floor(y / STEP);
+    const offX   = x - cellX * STEP,     offY   = y - cellY * STEP;
+    const inHGap = offY >= CELL_SIZE && cellY < BOARD_SIZE - 1;
+    const inVGap = offX >= CELL_SIZE && cellX < BOARD_SIZE - 1;
+    return { x, y, cellX, cellY, inHGap, inVGap };
+}
+
+// ─── Click / drag shared state ────────────────────────────────────────────
+
+let _suppressNextClick = false;
+let dragState = null; // { fromTouch, isDragging, startX, startY } | null
+const DRAG_THRESHOLD = 6; // board-space px; below this a gesture is a tap, not a drag
+
 // ─── Click handling ───────────────────────────────────────────────────────
 
 canvas.addEventListener('click', e => {
+    if (_suppressNextClick) { _suppressNextClick = false; return; }
     if (gameState.gameOver || !isMyTurn() || flipAnimating) return;
-    const rect = canvas.getBoundingClientRect();
-    let x = (e.clientX - rect.left) / boardScale;
-    let y = (e.clientY - rect.top)  / boardScale;
-    if (gameState.flipped) { x = BOARD_TOTAL - x; y = BOARD_TOTAL - y; }
-
-    const cellX = Math.floor(x / STEP), cellY = Math.floor(y / STEP);
-    const offX  = x - cellX * STEP,     offY  = y - cellY * STEP;
-    const inHGap = offY >= CELL_SIZE && cellY < BOARD_SIZE - 1;
-    const inVGap = offX >= CELL_SIZE && cellX < BOARD_SIZE - 1;
+    const { cellX, cellY, inHGap, inVGap } = clientToCell(e.clientX, e.clientY);
 
     if (!inHGap && !inVGap) {
         if (tapMode) {
@@ -496,15 +509,12 @@ function computeHoverState(cellX, cellY, inHGap, inVGap) {
 }
 
 canvas.addEventListener('mousemove', e => {
-    const rect = canvas.getBoundingClientRect();
-    let x = (e.clientX - rect.left) / boardScale;
-    let y = (e.clientY - rect.top)  / boardScale;
-    if (gameState.flipped) { x = BOARD_TOTAL - x; y = BOARD_TOTAL - y; }
+    const { x, y, cellX, cellY, inHGap, inVGap } = clientToCell(e.clientX, e.clientY);
 
-    const cellX = Math.floor(x / STEP), cellY = Math.floor(y / STEP);
-    const offX  = x - cellX * STEP,     offY  = y - cellY * STEP;
-    const inHGap = offY >= CELL_SIZE && cellY < BOARD_SIZE - 1;
-    const inVGap = offX >= CELL_SIZE && cellX < BOARD_SIZE - 1;
+    if (dragState && !dragState.fromTouch) {
+        const dx = x - dragState.startX, dy = y - dragState.startY;
+        if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) dragState.isDragging = true;
+    }
 
     const prev = JSON.stringify(hoverState);
     hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
@@ -526,9 +536,86 @@ canvas.addEventListener('mousemove', e => {
 });
 
 canvas.addEventListener('mouseleave', () => {
+    dragState = null;
     hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
     canvas.style.cursor = 'default';
     render();
+});
+
+// ─── Drag-to-place ────────────────────────────────────────────────────────
+// Drag any distance across the board; release on a wall gap to place (or lock
+// a confirm-mode preview). Short taps fall through to the existing click handler.
+
+const EMPTY_HOVER = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
+
+function commitWallAtHover() {
+    const { wallRow, wallCol, wallOrientation } = hoverState;
+    if (wallRow === null) return false;
+    if (tapMode) handleTapWall(wallRow, wallCol, wallOrientation);
+    else         placeWall(wallRow, wallCol, wallOrientation);
+    return true;
+}
+
+// ── Touch ──
+canvas.addEventListener('touchstart', e => {
+    if (gameState.gameOver || !isMyTurn() || flipAnimating) return;
+    if (e.touches.length !== 1) { dragState = null; return; }
+    const t = e.touches[0];
+    const { x, y, cellX, cellY, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
+    dragState = { fromTouch: true, isDragging: false, startX: x, startY: y };
+    if (inHGap || inVGap) {
+        hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
+        render();
+        e.preventDefault(); // prevent scroll when starting on a wall gap
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+    if (!dragState?.fromTouch) return;
+    if (e.touches.length > 1) { dragState = null; return; }
+    const t = e.touches[0];
+    const { x, y, cellX, cellY, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
+    const dx = x - dragState.startX, dy = y - dragState.startY;
+    if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) dragState.isDragging = true;
+    if (dragState.isDragging) e.preventDefault(); // lock scroll once clearly dragging
+    const prev = JSON.stringify(hoverState);
+    hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
+    if (JSON.stringify(hoverState) !== prev) render();
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+    if (!dragState?.fromTouch) { dragState = null; return; }
+    const wasDragging = dragState.isDragging;
+    dragState = null;
+    if (!wasDragging) return; // short tap — let the synthetic click handle it normally
+    _suppressNextClick = true;
+    const t = e.changedTouches[0];
+    const { cellX, cellY, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
+    hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
+    if (!commitWallAtHover()) { hoverState = EMPTY_HOVER; render(); }
+});
+
+canvas.addEventListener('touchcancel', () => {
+    dragState = null;
+    hoverState = EMPTY_HOVER;
+    render();
+});
+
+// ── Mouse ──
+canvas.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    if (gameState.gameOver || !isMyTurn() || flipAnimating) return;
+    const { x, y } = clientToCell(e.clientX, e.clientY);
+    dragState = { fromTouch: false, isDragging: false, startX: x, startY: y };
+});
+
+canvas.addEventListener('mouseup', e => {
+    if (!dragState || dragState.fromTouch) return;
+    const wasDragging = dragState.isDragging;
+    dragState = null;
+    if (!wasDragging) return; // short click — let the click handler fire normally
+    _suppressNextClick = true;
+    if (!commitWallAtHover()) { hoverState = EMPTY_HOVER; render(); }
 });
 
 // ─── Tap-to-preview helpers ───────────────────────────────────────────────
