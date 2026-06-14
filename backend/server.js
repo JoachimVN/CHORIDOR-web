@@ -216,6 +216,18 @@ io.on('connection', socket => {
         console.log(`Activity room ${code}: ${p1Socket.id} vs ${socket.id}`);
     });
 
+    socket.on('surrender', () => {
+        const code = socket.data.roomCode;
+        if (!code) return;
+        const room = rooms.get(code);
+        if (!room) return;
+        const isP1 = room.p1 === socket.id;
+        if (!isP1 && room.p2 !== socket.id) return;
+        const winnerRole = isP1 ? 'p2' : 'p1';
+        const winnerName = isP1 ? room.p2Name : room.p1Name;
+        io.to(code).emit('game-surrendered', { winnerRole, winnerName });
+    });
+
     socket.on('rematch-request', () => {
         const code = socket.data.roomCode;
         if (!code) return;
