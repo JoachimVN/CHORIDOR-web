@@ -137,17 +137,20 @@ function closeRoom(room, code, notifySocketId) {
     console.log(`Room ${code} closed`);
 }
 
+function removeSpectator(room, code, socketId) {
+    room.spectators = room.spectators.filter(s => s.socketId !== socketId);
+    io.to(code).emit('spectator-count', room.spectators.length);
+}
+
 function handleSpectatorDisconnect(room, code, socketId) {
     if (room.pendingPromotion?.spectator.socketId !== socketId) {
-        room.spectators = room.spectators.filter(s => s.socketId !== socketId);
-        io.to(code).emit('spectator-count', room.spectators.length);
+        removeSpectator(room, code, socketId);
         return;
     }
     // The offered spectator left — cancel and try the next one
     const { slot, remainingId } = room.pendingPromotion;
     cancelPromotion(room, io, code);
-    room.spectators = room.spectators.filter(s => s.socketId !== socketId);
-    io.to(code).emit('spectator-count', room.spectators.length);
+    removeSpectator(room, code, socketId);
 
     if (!offerSpectatorPromotion(room, io, code, slot)) {
         const slotEmpty = slot === 'p1' ? !room.p1 : !room.p2;
@@ -156,21 +159,16 @@ function handleSpectatorDisconnect(room, code, socketId) {
 }
 
 function handlePlayerDisconnect(room, code, socket, isP1) {
+    const remainingId = isP1 ? room.p2 : room.p1;
     if (room.pendingPromotion) {
         cancelPromotion(room, io, code);
-        socket.to(code).emit('opponent-left');
-        if (room.instanceId) activityRooms.delete(room.instanceId);
-        rooms.delete(code);
-        console.log(`Room ${code} closed (player left during pending promotion)`);
+        closeRoom(room, code, remainingId);
         return;
     }
     if (isP1) room.p1 = null; else room.p2 = null;
     const slot = isP1 ? 'p1' : 'p2';
     if (!offerSpectatorPromotion(room, io, code, slot)) {
-        socket.to(code).emit('opponent-left');
-        if (room.instanceId) activityRooms.delete(room.instanceId);
-        rooms.delete(code);
-        console.log(`Room ${code} closed`);
+        closeRoom(room, code, remainingId);
     }
 }
 
