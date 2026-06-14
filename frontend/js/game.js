@@ -817,6 +817,7 @@ function updateStatus() {
                 details: `vs. ${oppLabel}`,
                 state: myTurn ? 'Your turn' : `${oppLabel}'s turn`,
                 timestamps: { start: matchStartTime },
+                assets: { large_image: 'embedded_background', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' },
                 party: { id: matchRoomCode, size: [2, 2] },
                 instance: true,
             });
@@ -871,6 +872,7 @@ function showWinScreen(winner, playerClass, delay = 0) {
         setDiscordPresence({
             details: `vs. ${opponentName || 'Opponent'}`,
             state: `${winner} wins!`,
+            assets: { large_image: 'embedded_background', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' },
             party: { id: matchRoomCode, size: [2, 2] },
         });
     }
@@ -990,7 +992,7 @@ function initSocket(errorElId, callback) {
         // Keep onlineMode=true so New Game/Change Mode still route to the lobby
         opponentName   = '';
         opponentAvatar = '';
-        if (isDiscord) setDiscordPresence({ state: 'In lobby' });
+        if (isDiscord) setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
         gameState.gameOver = true;
         hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
         clearTapPreview();
@@ -1269,7 +1271,7 @@ document.getElementById('btn-discord-cancel')?.addEventListener('click', () => {
     if (btn) { btn.querySelector('span').textContent = 'Play'; btn.disabled = false; }
     document.getElementById('btn-discord-cancel')?.classList.add('hidden');
     document.getElementById('discord-error')?.classList.add('hidden');
-    setDiscordPresence({ state: 'In lobby' });
+    setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
 });
 
 document.getElementById('win-card-close').addEventListener('click', () => {
@@ -1481,7 +1483,7 @@ if (isDiscord) try {
     await sdk.ready();
     discordInstanceId = sdk.instanceId;
     discordSdk = sdk;
-    setDiscordPresence({ state: 'In lobby' });
+    setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
     patchUrlMappings([{
         prefix: '/api',
         target: 'choridor-web-production.up.railway.app',
@@ -1514,7 +1516,7 @@ if (isDiscord) try {
         const btn = document.getElementById('btn-discord-play');
         if (btn) { btn.querySelector('span').textContent = 'Finding opponent…'; btn.disabled = true; }
         document.getElementById('btn-discord-cancel')?.classList.remove('hidden');
-        setDiscordPresence({ state: 'Finding a match...', party: { size: [1, 2] } });
+        setDiscordPresence({ state: 'Finding a match...', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' }, party: { size: [1, 2] } });
         socket.emit('join-activity', { instanceId: discordInstanceId, name: getMyName(), avatarUrl: myAvatar });
     });
 } catch (e) {
