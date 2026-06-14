@@ -1050,9 +1050,10 @@ function initSocket(errorElId, callback) {
         resetGame();
     });
 
-    socket.on('spectate-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, snapshot, queuePosition, spectatorCount: sc } = {}) => {
+    socket.on('spectate-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, snapshot, queuePosition, spectatorCount: sc, steppedAside } = {}) => {
         spectatorMode  = true;
         onlineMode     = false;
+        if (steppedAside) { onlineRole = null; opponentName = ''; opponentAvatar = ''; }
         spectatorCount = sc || 1;
         document.getElementById('p1-name').textContent = p1Name || 'Player 1';
         document.getElementById('p2-name').textContent = p2Name || 'Player 2';
@@ -1061,7 +1062,7 @@ function initSocket(errorElId, callback) {
         resetGame();
         if (snapshot) { applyGameSnapshot(snapshot); updateWallCounts(); }
         hideLobby();
-        if (!isDiscord) showToast('Room is full - watching as spectator');
+        if (!isDiscord) showToast(steppedAside ? 'You are now spectating' : 'Room is full - watching as spectator');
         if (isDiscord) setDiscordPresence({ state: 'Spectating', details: `${p1Name || 'Player 1'} vs. ${p2Name || 'Player 2'}`, assets: { large_image: 'embedded_background', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
         updateSpectatorBanner(queuePosition || 1);
         updateSpectatorCountUI(spectatorCount);
@@ -1116,9 +1117,10 @@ function initSocket(errorElId, callback) {
         document.getElementById('discord-rejoin-bar').classList.add('hidden');
     });
 
-    // Shown to the spectator when a slot opens up
+    // Shown to the spectator when a slot opens up (no accept needed - they're pre-accepted)
     socket.on('spectator-slot-offer', ({ opponentName } = {}) => {
         document.getElementById('spectator-slot-opponent').textContent = opponentName || 'opponent';
+        document.getElementById('spectator-slot-accept').classList.add('hidden');
         if (!document.getElementById('win-overlay').classList.contains('hidden')) {
             document.getElementById('win-overlay').classList.add('hidden');
         }
@@ -1128,6 +1130,7 @@ function initSocket(errorElId, callback) {
     socket.on('spectator-offer-cancelled', () => {
         document.getElementById('spectator-offer-bar').classList.add('hidden');
         document.getElementById('spectator-slot-bar').classList.add('hidden');
+        document.getElementById('spectator-slot-accept').classList.remove('hidden');
         document.getElementById('btn-step-aside').classList.add('hidden');
     });
 
@@ -1143,19 +1146,6 @@ function initSocket(errorElId, callback) {
         const btn = document.getElementById('btn-step-aside');
         btn.textContent = 'Step aside';
         btn.disabled    = false;
-    });
-
-    // This player stepped aside and the spectator was promoted
-    socket.on('you-stepped-aside', () => {
-        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
-        spectatorMode = false;
-        showToast('You stepped aside');
-        socket.disconnect(); socket = null;
-        resetGame();
-        document.getElementById('win-overlay').classList.add('hidden');
-        document.getElementById('lobby-overlay').classList.remove('hidden');
-        showLobbyView(isDiscord ? 'lview-discord' : 'lview-mode');
-        applyPlayerNames();
     });
 
     socket.on('game-surrendered', ({ winnerRole, winnerName } = {}) => {

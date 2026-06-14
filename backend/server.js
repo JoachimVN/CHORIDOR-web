@@ -59,7 +59,7 @@ function applyMoveToSnapshot(snapshot, moverRole, data) {
 
 // Emit spectator promotion offers to remaining/staying player and first spectator.
 // Returns false if no live spectators found.
-function offerSpectatorPromotion(room, io, code, slot, steppingAsideId = null) {
+function offerSpectatorPromotion(room, io, code, slot, steppingAsideId = null, steppingAsideName = null, steppingAsideAvatar = null) {
     let spectator = null;
     while (room.spectators.length > 0) {
         const candidate = room.spectators[0];
@@ -74,10 +74,12 @@ function offerSpectatorPromotion(room, io, code, slot, steppingAsideId = null) {
     room.pendingPromotion = {
         spectator,
         slot,
-        accepted:        new Set(),
-        needed:          [remainingId, spectator.socketId],
+        accepted:             new Set([spectator.socketId]), // spectator pre-accepted
+        needed:               [remainingId],                  // only remaining player must confirm
         remainingId,
-        steppingAsideId: steppingAsideId || null,
+        steppingAsideId:      steppingAsideId || null,
+        steppingAsideName:    steppingAsideName || null,
+        steppingAsideAvatar:  steppingAsideAvatar || null,
     };
 
     io.sockets.sockets.get(remainingId)
@@ -91,7 +93,7 @@ function offerSpectatorPromotion(room, io, code, slot, steppingAsideId = null) {
 
 // Complete an accepted promotion: move spectator into slot, notify all parties.
 function completePromotion(room, io, code) {
-    const { spectator, slot, remainingId, steppingAsideId } = room.pendingPromotion;
+    const { spectator, slot, remainingId, steppingAsideId, steppingAsideName, steppingAsideAvatar } = room.pendingPromotion;
     room.pendingPromotion = null;
     room.spectators = room.spectators.filter(s => s.socketId !== spectator.socketId);
 
@@ -101,9 +103,17 @@ function completePromotion(room, io, code) {
 
     if (steppingAsideId) {
         const stepSock = io.sockets.sockets.get(steppingAsideId);
-        stepSock?.emit('you-stepped-aside');
-        stepSock?.leave(code);
-        if (stepSock) stepSock.data.roomCode = null;
+        if (stepSock) {
+            const queuePos = room.spectators.push({ socketId: steppingAsideId, name: steppingAsideName || '', avatarUrl: steppingAsideAvatar || '' });
+            stepSock.emit('spectate-start', {
+                p1Name:         room.p1Name,   p2Name:   room.p2Name,
+                p1Avatar:       room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
+                snapshot:       room.snapshot,
+                queuePosition:  queuePos,
+                spectatorCount: room.spectators.length,
+                steppedAside:   true,
+            });
+        }
     }
 
     io.sockets.sockets.get(spectator.socketId)?.emit('become-player', {
@@ -354,8 +364,10 @@ io.on('connection', socket => {
         const isP2 = room.p2 === socket.id;
         if (!isP1 && !isP2) return;
 
-        const slot = isP1 ? 'p1' : 'p2';
-        if (!offerSpectatorPromotion(room, io, code, slot, socket.id)) return;
+        const slot        = isP1 ? 'p1' : 'p2';
+        const stepName    = isP1 ? room.p1Name   : room.p2Name;
+        const stepAvatar  = isP1 ? room.p1Avatar : room.p2Avatar;
+        if (!offerSpectatorPromotion(room, io, code, slot, socket.id, stepName, stepAvatar)) return;
 
         socket.emit('step-aside-waiting');
     });
