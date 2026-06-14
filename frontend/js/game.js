@@ -800,7 +800,7 @@ function populateWinStats() {
     ['p1', 'p2'].forEach(p => {
         const m = gameState[p === 'p1' ? 'movesP1' : 'movesP2'];
         const el = document.getElementById(`win-stat-${p}-moves`);
-        el.innerHTML = `<strong>${m}</strong>move${m !== 1 ? 's' : ''}`;
+        el.innerHTML = `<strong>${m}</strong>move${m === 1 ? '' : 's'}`;
 
         const container = document.getElementById(`win-stat-${p}-walls`);
         container.innerHTML = '';
