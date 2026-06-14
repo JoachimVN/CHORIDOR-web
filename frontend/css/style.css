@@ -682,6 +682,24 @@ button:active {
 
 .lobby-overlay.hidden { display: none; }
 
+.lobby-card-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: #2A2F48;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 6px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color 0.15s;
+}
+
+.lobby-card-close:hover { color: #7880A0; }
+.lobby-card-close.hidden { display: none; }
+
 @keyframes lobby-card-in {
     from { opacity: 0; transform: translateY(20px) scale(0.97); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -697,6 +715,7 @@ button:active {
 }
 
 .lobby-card {
+    position: relative;
     background: #13151F;
     border: 1px solid #1E2234;
     border-radius: 20px;

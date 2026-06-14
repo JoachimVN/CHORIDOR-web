@@ -1152,7 +1152,20 @@ document.getElementById('btn-online').addEventListener('click', () => {
     }
     showLobbyView('lview-online');
 });
-document.getElementById('btn-online-back').addEventListener('click', () => { playSound('Select'); showLobbyView('lview-mode'); });
+document.getElementById('btn-online-back').addEventListener('click', () => {
+    playSound('Select');
+    showLobbyView('lview-mode');
+    if (lobbyOpenedFromWin) document.getElementById('btn-lobby-back').classList.remove('hidden');
+});
+
+document.getElementById('btn-lobby-back').addEventListener('click', () => {
+    if (!lobbyOpenedFromWin) return;
+    playSound('Select');
+    lobbyOpenedFromWin = false;
+    document.getElementById('btn-lobby-back').classList.add('hidden');
+    document.getElementById('lobby-overlay').classList.add('hidden');
+    document.getElementById('win-overlay').classList.remove('hidden');
+});
 
 document.getElementById('btn-create').addEventListener('click', () => {
     playSound('Select');
