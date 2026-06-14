@@ -207,7 +207,7 @@ function drawLegalMoves() {
         if (isSelected) {
             ctx.globalAlpha = 0.2;
             ctx.fillRect(bx, by, CELL_SIZE, CELL_SIZE);
-            ctx.globalAlpha = 1.0;
+            ctx.globalAlpha = 1;
             ctx.beginPath();
             ctx.arc(cx, cy, CELL_SIZE * 0.21, 0, Math.PI * 2);
             ctx.fill();
@@ -802,6 +802,19 @@ function animateWallSpend(player) {
     }, { once: true });
 }
 
+function updateInMatchPresence(myTurn) {
+    if (!isDiscord || gameState.gameOver) return;
+    const oppLabel = opponentName || 'Opponent';
+    setDiscordPresence({
+        details: `vs. ${oppLabel}`,
+        state: myTurn ? 'Your turn' : `${oppLabel}'s turn`,
+        timestamps: { start: matchStartTime },
+        assets: { large_image: 'embedded_background', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' },
+        party: { id: matchRoomCode, size: [2, 2] },
+        instance: true,
+    });
+}
+
 function updateStatus() {
     const status = document.getElementById('status');
     if (onlineMode) {
@@ -811,17 +824,7 @@ function updateStatus() {
         const oppTurn = opp ? `${opp}${apostrophe} turn` : "Opponent's turn";
         status.textContent = myTurn ? 'Your turn' : oppTurn;
         status.className   = `status-label ${gameState.currentPlayer}`;
-        if (isDiscord && !gameState.gameOver) {
-            const oppLabel = opp || 'Opponent';
-            setDiscordPresence({
-                details: `vs. ${oppLabel}`,
-                state: myTurn ? 'Your turn' : `${oppLabel}'s turn`,
-                timestamps: { start: matchStartTime },
-                assets: { large_image: 'embedded_background', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' },
-                party: { id: matchRoomCode, size: [2, 2] },
-                instance: true,
-            });
-        }
+        updateInMatchPresence(myTurn);
     } else {
         const name = gameState.currentPlayer === 'p1'
             ? document.getElementById('p1-name').textContent
