@@ -115,7 +115,7 @@ app.post('/auth/discord', express.json(), async (req, res) => {
         const avatarUrl  = user.avatar
             ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
             : `https://cdn.discordapp.com/embed/avatars/${defaultIdx}.png`;
-        res.json({ username: user.global_name || user.username, handle: user.username, avatarUrl });
+        res.json({ username: user.global_name || user.username, handle: user.username, avatarUrl, access_token: token.access_token });
     } catch {
         res.status(500).json({ error: 'Auth failed' });
     }
