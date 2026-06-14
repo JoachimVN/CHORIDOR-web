@@ -1,3 +1,4 @@
+const { randomInt } = require('node:crypto');
 const express  = require('express');
 const { createServer } = require('node:http');
 const { Server }       = require('socket.io');
@@ -24,7 +25,7 @@ const pendingActivities = new Map(); // instanceId → { socket, name, avatarUrl
 
 function makeCode() {
     let code;
-    do { code = Math.random().toString(36).slice(2, 5).toUpperCase(); }
+    do { code = Array.from({ length: 3 }, () => randomInt(36).toString(36)).join('').toUpperCase(); }
     while (rooms.has(code));
     return code;
 }
@@ -42,6 +43,7 @@ app.post('/auth/discord', express.json(), async (req, res) => {
                 client_id:     process.env.DISCORD_CLIENT_ID || '1515199692793843712',
                 client_secret: process.env.DISCORD_CLIENT_SECRET,
                 grant_type:    'authorization_code',
+                redirect_uri:  '',
                 code,
             }).toString(),
         });
@@ -138,7 +140,7 @@ io.on('connection', socket => {
         const code = socket.data.roomCode;
         if (!code) return;
         const room = rooms.get(code);
-        if (!room || room.rematchReady !== socket.id) return;
+        if (room?.rematchReady !== socket.id) return;
         room.rematchReady = null;
         socket.to(code).emit('rematch-cancelled');
     });
