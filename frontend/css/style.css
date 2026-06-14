@@ -396,20 +396,21 @@ button:active {
 
 .win-card-close {
     position: absolute;
-    top: 12px;
-    right: 14px;
+    top: 10px;
+    right: 12px;
     background: none;
     border: none;
-    color: #2E3350;
-    font-size: 13px;
+    color: #4A5272;
+    font-size: 17px;
     cursor: pointer;
-    padding: 4px 6px;
+    padding: 6px 8px;
     line-height: 1;
     border-radius: 4px;
     transition: color 0.15s;
 }
 
-.win-card-close:hover { color: #7880A0; }
+.win-card-close:hover  { color: #9BA3C3; background: none; }
+.win-card-close:active { background: none; }
 
 .win-card.p1 {
     border-color: rgba(158, 74, 64, 0.4);
@@ -684,20 +685,21 @@ button:active {
 
 .lobby-card-close {
     position: absolute;
-    top: 14px;
-    right: 16px;
+    top: 12px;
+    right: 14px;
     background: none;
     border: none;
-    color: #2A2F48;
-    font-size: 13px;
+    color: #4A5272;
+    font-size: 17px;
     cursor: pointer;
-    padding: 4px 6px;
+    padding: 6px 8px;
     line-height: 1;
     border-radius: 4px;
     transition: color 0.15s;
 }
 
-.lobby-card-close:hover { color: #7880A0; }
+.lobby-card-close:hover  { color: #9BA3C3; background: none; }
+.lobby-card-close:active { background: none; }
 .lobby-card-close.hidden { display: none; }
 
 @keyframes lobby-card-in {
