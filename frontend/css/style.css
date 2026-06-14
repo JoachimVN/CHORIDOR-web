@@ -949,6 +949,33 @@ button:active {
     color: #6870A0;
 }
 
+/* Discord activity waiting UI */
+.discord-queue-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px 0 8px;
+}
+
+.discord-queue-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(62, 104, 168, 0.3);
+    border-top-color: #3E68A8;
+    border-radius: 50%;
+    animation: discord-spin 0.9s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes discord-spin { to { transform: rotate(360deg); } }
+
+.discord-status-text {
+    color: #8890A8;
+    font-size: 15px;
+    font-weight: bold;
+}
+
 /* Legal modal */
 .legal-modal {
     position: fixed;

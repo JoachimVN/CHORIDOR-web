@@ -1,3 +1,6 @@
+const APP_VERSION = 'v1.3.0';
+document.querySelectorAll('.lobby-version').forEach(el => { el.textContent = APP_VERSION; });
+
 const BOARD_SIZE = 9;
 const CELL_SIZE  = 54;
 const GAP        = 10;
@@ -1254,28 +1257,6 @@ document.getElementById('btn-copy-link').addEventListener('click', () => {
     });
 });
 
-document.getElementById('btn-discord-play')?.addEventListener('click', () => {
-    playSound('Select');
-    setConnectingBtn('btn-discord-play');
-    initSocket('discord-error', () => {
-        socket.emit('join-activity', { instanceId: discordInstanceId, name: getMyName(), avatarUrl: myAvatar });
-        socket.once('activity-waiting', () => {
-            const btn = document.getElementById('btn-discord-play');
-            if (btn) { btn.querySelector('span').textContent = 'Waiting for opponent…'; btn.disabled = true; }
-            document.getElementById('btn-discord-cancel')?.classList.remove('hidden');
-        });
-    });
-});
-
-document.getElementById('btn-discord-cancel')?.addEventListener('click', () => {
-    playSound('Select');
-    socket?.disconnect(); socket = null;
-    const btn = document.getElementById('btn-discord-play');
-    if (btn) { btn.querySelector('span').textContent = 'Play'; btn.disabled = false; }
-    document.getElementById('btn-discord-cancel')?.classList.add('hidden');
-    document.getElementById('discord-error')?.classList.add('hidden');
-    setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
-});
 
 document.getElementById('win-card-close').addEventListener('click', () => {
     document.getElementById('win-overlay').classList.add('hidden');
@@ -1511,14 +1492,10 @@ if (isDiscord) try {
         const errEl = document.getElementById('discord-error');
         if (errEl) { errEl.textContent = `Auth failed: ${authErr?.message || authErr}`; errEl.classList.remove('hidden'); }
     }
-    // Auto-enter matchmaking queue — no button press needed in Discord Activity
-    setConnectingBtn('btn-discord-play');
+    // Auto-enter matchmaking queue
     initSocket('discord-error', () => {
-        // clearConnectingBtn ran just before this callback and reset the button to "Play",
-        // so we immediately re-apply the waiting state here
-        const btn = document.getElementById('btn-discord-play');
-        if (btn) { btn.querySelector('span').textContent = 'Finding opponent…'; btn.disabled = true; }
-        document.getElementById('btn-discord-cancel')?.classList.remove('hidden');
+        const statusText = document.getElementById('discord-status-text');
+        if (statusText) statusText.textContent = 'Finding opponent...';
         setDiscordPresence({ state: 'Finding a match...', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' }, party: { size: [1, 2] } });
         socket.emit('join-activity', { instanceId: discordInstanceId, name: getMyName(), avatarUrl: myAvatar });
     });
