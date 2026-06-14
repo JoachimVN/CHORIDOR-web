@@ -824,7 +824,7 @@ function showWinScreen(winner, playerClass, delay = 0) {
 
     document.getElementById('play-again-btn').classList.toggle('hidden', onlineMode);
     document.getElementById('btn-rematch').classList.toggle('hidden', !onlineMode);
-    document.getElementById('btn-leave').classList.toggle('hidden', !onlineMode);
+    document.getElementById('btn-change-mode').classList.toggle('hidden', !onlineMode);
     if (onlineMode) updateRematchBtn('idle');
     populateWinStats();
 
@@ -936,14 +936,21 @@ function initSocket(errorElId, callback) {
         s.className   = 'status-label';
     });
 
-    socket.on('rematch-requested', () => updateRematchBtn('incoming'));
+    socket.on('rematch-requested', () => {
+        updateRematchBtn('incoming');
+        if (lobbyOpenedFromWin) showToast('Opponent wants a rematch!');
+    });
     socket.on('rematch-cancelled', () => updateRematchBtn('idle'));
 
     socket.on('rematch-start', ({ p1Name, p2Name, p1Avatar, p2Avatar } = {}) => {
         onlineRole     = onlineRole === 'p1' ? 'p2' : 'p1';
         opponentName   = onlineRole === 'p1' ? (p2Name   || '') : (p1Name   || '');
         opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
-        document.getElementById('win-overlay').classList.add('hidden');
+        if (lobbyOpenedFromWin) {
+            lobbyOpenedFromWin = false;
+            document.getElementById('lobby-overlay').classList.add('hidden');
+            document.getElementById('btn-lobby-back').classList.add('hidden');
+        }
         applyPlayerNames();
         resetGame();
     });
@@ -1123,9 +1130,28 @@ if (discordNameInput) {
     });
 }
 
-document.getElementById('btn-local').addEventListener('click', () => { playSound('Select'); applyPlayerNames(); hideLobby(); });
+document.getElementById('btn-local').addEventListener('click', () => {
+    playSound('Select');
+    if (lobbyOpenedFromWin) {
+        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
+        socket?.disconnect(); socket = null;
+        lobbyOpenedFromWin = false;
+        resetGame();
+    }
+    applyPlayerNames();
+    hideLobby();
+});
 
-document.getElementById('btn-online').addEventListener('click', () => { playSound('Select'); showLobbyView('lview-online'); });
+document.getElementById('btn-online').addEventListener('click', () => {
+    playSound('Select');
+    if (lobbyOpenedFromWin) {
+        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
+        socket?.disconnect(); socket = null;
+        lobbyOpenedFromWin = false;
+        resetGame();
+    }
+    showLobbyView('lview-online');
+});
 document.getElementById('btn-online-back').addEventListener('click', () => { playSound('Select'); showLobbyView('lview-mode'); });
 
 document.getElementById('btn-create').addEventListener('click', () => {
@@ -1203,15 +1229,25 @@ document.getElementById('btn-rematch')?.addEventListener('click', () => {
     }
 });
 
-document.getElementById('btn-leave')?.addEventListener('click', () => {
-    playSound('Select');
-    onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
-    socket?.disconnect(); socket = null;
+function openLobbyFromWin() {
+    lobbyOpenedFromWin = true;
     document.getElementById('win-overlay').classList.add('hidden');
+    document.getElementById('win-footer').classList.add('hidden');
     document.getElementById('lobby-overlay').classList.remove('hidden');
+    document.getElementById('btn-lobby-back').classList.remove('hidden');
     showLobbyView(isDiscord ? 'lview-discord' : 'lview-mode');
     applyPlayerNames();
-    resetGame();
+    // Socket stays connected — opponent can still request rematch
+}
+
+document.getElementById('btn-change-mode').addEventListener('click', () => {
+    playSound('Select');
+    openLobbyFromWin();
+});
+
+document.getElementById('win-footer-change-mode').addEventListener('click', () => {
+    playSound('Select');
+    openLobbyFromWin();
 });
 
 document.getElementById('btn-join-confirm').addEventListener('click', () => {
