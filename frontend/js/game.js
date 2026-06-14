@@ -791,6 +791,29 @@ function checkWin(delay = 0) {
     return false;
 }
 
+function populateWinStats() {
+    document.getElementById('win-stat-p1-name').textContent = document.getElementById('p1-name').textContent;
+    document.getElementById('win-stat-p2-name').textContent = document.getElementById('p2-name').textContent;
+
+    const m1 = gameState.movesP1, m2 = gameState.movesP2;
+    document.getElementById('win-stat-p1-moves').innerHTML = `<strong>${m1}</strong> move${m1 !== 1 ? 's' : ''}`;
+    document.getElementById('win-stat-p2-moves').innerHTML = `<strong>${m2}</strong> move${m2 !== 1 ? 's' : ''}`;
+
+    ['p1', 'p2'].forEach(p => {
+        const container = document.getElementById(`win-stat-${p}-walls`);
+        container.innerHTML = '';
+        const remaining = gameState.wallCounts[p];
+        for (let i = 0; i < WALLS_PER_PLAYER; i++) {
+            const box = document.createElement('div');
+            box.className = `win-wall-mini ${i < remaining ? 'active' : 'used'}`;
+            if (i < remaining) box.style.background = p === 'p1' ? P1_COLOR : P2_COLOR;
+            container.appendChild(box);
+        }
+    });
+
+    document.getElementById('win-stats').classList.remove('hidden');
+}
+
 function showWinScreen(winner, playerClass, delay = 0) {
     clearTapPreview();
     gameState.gameOver = true;   // lock input now; reveal the card after the move lands
@@ -804,6 +827,7 @@ function showWinScreen(winner, playerClass, delay = 0) {
     document.getElementById('btn-rematch').classList.toggle('hidden', !onlineMode);
     document.getElementById('btn-leave').classList.toggle('hidden', !onlineMode);
     if (onlineMode) updateRematchBtn('idle');
+    populateWinStats();
 
     const reveal = () => {
         playSound('Win');
@@ -1148,6 +1172,10 @@ document.getElementById('btn-discord-cancel')?.addEventListener('click', () => {
     if (btn) { btn.querySelector('span').textContent = 'Play'; btn.disabled = false; }
     document.getElementById('btn-discord-cancel')?.classList.add('hidden');
     document.getElementById('discord-error')?.classList.add('hidden');
+});
+
+document.getElementById('win-stats-close').addEventListener('click', () => {
+    document.getElementById('win-stats').classList.add('hidden');
 });
 
 document.getElementById('btn-rematch')?.addEventListener('click', () => {

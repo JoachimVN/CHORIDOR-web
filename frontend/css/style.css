@@ -440,6 +440,98 @@ button:active {
 .win-card.p1 .win-divider { background: rgba(158, 74, 64, 0.5); }
 .win-card.p2 .win-divider { background: rgba(62, 104, 168, 0.5); }
 
+/* Win stats panel */
+.win-stats {
+    position: relative;
+    background: #0E1018;
+    border: 1px solid #232640;
+    border-radius: 10px;
+    padding: 16px 20px 14px;
+    margin-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.win-stats.hidden { display: none; }
+
+.win-stats-close {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #44495E;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 3px 5px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color 0.15s;
+}
+
+.win-stats-close:hover { color: #8890A8; }
+
+.win-stats-grid {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.win-stat-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+}
+
+.win-stat-sep {
+    width: 1px;
+    height: 52px;
+    background: #1E2236;
+    flex-shrink: 0;
+}
+
+.win-stat-name {
+    font-size: 11px;
+    font-weight: bold;
+    color: #6A7090;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.win-stat-walls {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 96px;
+}
+
+.win-wall-mini {
+    width: 6px;
+    height: 14px;
+    border-radius: 2px;
+    transition: background 0.2s;
+}
+
+.win-wall-mini.used { background: #1E2236; }
+
+.win-stat-moves {
+    font-size: 12px;
+    color: #8890A8;
+    font-variant-numeric: tabular-nums;
+}
+
+.win-stat-moves strong {
+    color: #C8CCDC;
+    font-size: 14px;
+}
+
 .win-btn {
     display: flex;
     align-items: center;
