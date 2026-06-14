@@ -1248,6 +1248,7 @@ function getMyName() {
 
 function updateRematchBtn(state) {
     rematchState = state;
+    if (spectatorMode) return;
     let modifier = '';
     let label    = 'Rematch';
     if (state === 'waiting')  { modifier = ' waiting';  label = 'Waiting…'; }
