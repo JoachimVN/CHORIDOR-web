@@ -51,7 +51,9 @@ let gameState = {
     currentPlayer: 'p1',
     legalMoves:    [],
     flipped:       false,
-    gameOver:      false
+    gameOver:      false,
+    movesP1:       0,
+    movesP2:       0,
 };
 
 // ─── Hover state ──────────────────────────────────────────────────────────
@@ -621,8 +623,8 @@ function movePawn(row, col) {
     const from   = mover === 'p1' ? { ...gameState.p1Pawn } : { ...gameState.p2Pawn };
     const isJump = Math.abs(row - from.row) + Math.abs(col - from.col) > 1;
 
-    if (mover === 'p1') gameState.p1Pawn = { row, col };
-    else                gameState.p2Pawn = { row, col };
+    if (mover === 'p1') { gameState.p1Pawn = { row, col }; gameState.movesP1++; }
+    else                { gameState.p2Pawn = { row, col }; gameState.movesP2++; }
 
     playSound(isJump ? 'Jump' : 'Move');
     if (socket && onlineMode) socket.emit('move', { type: 'pawn', row, col });
@@ -647,8 +649,8 @@ function placeWall(row, col, orientation, animateBoardWall = true) {
     if (!bothPlayersHavePath()) { gameState.walls.delete(wallKey); return; }
 
     gameState.wallOwners.set(wallKey, mover);
-    if (mover === 'p1') gameState.wallCounts.p1--;
-    else                gameState.wallCounts.p2--;
+    if (mover === 'p1') { gameState.wallCounts.p1--; gameState.movesP1++; }
+    else                { gameState.wallCounts.p2--; gameState.movesP2++; }
 
     playSound('Wall');
     if (socket && onlineMode) socket.emit('move', { type: 'wall', row, col, orientation });
@@ -664,8 +666,8 @@ function applyOpponentPawnMove(data) {
     const mover  = gameState.currentPlayer;
     const from   = mover === 'p1' ? { ...gameState.p1Pawn } : { ...gameState.p2Pawn };
     const isJump = Math.abs(data.row - from.row) + Math.abs(data.col - from.col) > 1;
-    if (mover === 'p1') gameState.p1Pawn = { row: data.row, col: data.col };
-    else                gameState.p2Pawn = { row: data.row, col: data.col };
+    if (mover === 'p1') { gameState.p1Pawn = { row: data.row, col: data.col }; gameState.movesP1++; }
+    else                { gameState.p2Pawn = { row: data.row, col: data.col }; gameState.movesP2++; }
     playSound(isJump ? 'Jump' : 'Move');
     startPawnAnim(mover, from, { row: data.row, col: data.col }, isJump);
     if (checkWin(winDelay(isJump))) return;
@@ -679,8 +681,8 @@ function applyOpponentWallMove(data) {
     const wallKey = JSON.stringify({ row: data.row, col: data.col, orientation: data.orientation });
     gameState.walls.add(wallKey);
     gameState.wallOwners.set(wallKey, mover);
-    if (mover === 'p1') gameState.wallCounts.p1--;
-    else                gameState.wallCounts.p2--;
+    if (mover === 'p1') { gameState.wallCounts.p1--; gameState.movesP1++; }
+    else                { gameState.wallCounts.p2--; gameState.movesP2++; }
     playSound('Wall');
     startWallAnim(wallKey);
     animateWallSpend(mover);
@@ -828,7 +830,9 @@ function resetGame() {
         currentPlayer: 'p1',
         legalMoves:    [],
         flipped:       onlineMode ? onlineRole === 'p2' : gameState.flipped,
-        gameOver:      false
+        gameOver:      false,
+        movesP1:       0,
+        movesP2:       0,
     };
     document.getElementById('win-overlay').classList.add('hidden');
     updateWallCounts();
