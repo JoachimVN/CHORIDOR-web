@@ -34,7 +34,7 @@ function makeCode() {
 
 function makeSnapshot() {
     return {
-        walls: [],          // { row, col, orientation, owner }
+        walls: [],
         p1Pawn: { row: 8, col: 4 },
         p2Pawn: { row: 0, col: 4 },
         wallCounts: { p1: 10, p2: 10 },
@@ -54,6 +54,36 @@ function applyMoveToSnapshot(snapshot, moverRole, data) {
         if (moverRole === 'p1') snapshot.movesP1++; else snapshot.movesP2++;
     }
     snapshot.currentPlayer = moverRole === 'p1' ? 'p2' : 'p1';
+}
+
+function promoteSpectatorToPlayer(room, io, code, isP1) {
+    let promoted = null;
+    let promotedSocket = null;
+    while (room.spectators.length > 0) {
+        const candidate = room.spectators.shift();
+        const sock = io.sockets.sockets.get(candidate.socketId);
+        if (sock) { promoted = candidate; promotedSocket = sock; break; }
+    }
+    if (!promoted) return false;
+
+    if (isP1) { room.p1 = promoted.socketId; room.p1Name = promoted.name; room.p1Avatar = promoted.avatarUrl; }
+    else      { room.p2 = promoted.socketId; room.p2Name = promoted.name; room.p2Avatar = promoted.avatarUrl; }
+
+    promotedSocket.emit('become-player', {
+        role:     isP1 ? 'p1' : 'p2',
+        p1Name:   room.p1Name, p2Name:   room.p2Name,
+        p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
+        snapshot: room.snapshot,
+    });
+
+    const remainingSocket = io.sockets.sockets.get(isP1 ? room.p2 : room.p1);
+    if (remainingSocket) {
+        remainingSocket.emit('opponent-rejoined', { name: promoted.name, avatar: promoted.avatarUrl });
+    }
+
+    io.to(code).emit('spectator-count', room.spectators.length);
+    console.log(`Room ${code}: spectator promoted to ${isP1 ? 'p1' : 'p2'}`);
+    return true;
 }
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
@@ -142,7 +172,7 @@ io.on('connection', socket => {
         const existingCode = activityRooms.get(instanceId);
         if (existingCode) {
             const room = rooms.get(existingCode);
-            if (room && room.p1 && room.p2) {
+            if (room?.p1 && room?.p2) {
                 const queuePos = room.spectators.push({ socketId: socket.id, name, avatarUrl });
                 socket.data.roomCode = existingCode;
                 socket.join(existingCode);
@@ -240,46 +270,12 @@ io.on('connection', socket => {
         const isP2 = room.p2 === socket.id;
 
         if (!isP1 && !isP2) {
-            // Spectator disconnected - remove from queue
             room.spectators = room.spectators.filter(s => s.socketId !== socket.id);
             io.to(code).emit('spectator-count', room.spectators.length);
             return;
         }
 
-        // Player disconnected - try to promote a spectator
-        let promoted = null;
-        let promotedSocket = null;
-        while (room.spectators.length > 0) {
-            const candidate = room.spectators.shift();
-            const candidateSocket = io.sockets.sockets.get(candidate.socketId);
-            if (candidateSocket) {
-                promoted = candidate;
-                promotedSocket = candidateSocket;
-                break;
-            }
-        }
-
-        if (promoted) {
-            if (isP1) { room.p1 = promoted.socketId; room.p1Name = promoted.name; room.p1Avatar = promoted.avatarUrl; }
-            else      { room.p2 = promoted.socketId; room.p2Name = promoted.name; room.p2Avatar = promoted.avatarUrl; }
-
-            promotedSocket.emit('become-player', {
-                role:     isP1 ? 'p1' : 'p2',
-                p1Name:   room.p1Name, p2Name:   room.p2Name,
-                p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
-                snapshot: room.snapshot,
-            });
-
-            const remainingId     = isP1 ? room.p2 : room.p1;
-            const remainingSocket = io.sockets.sockets.get(remainingId);
-            if (remainingSocket) {
-                remainingSocket.emit('opponent-rejoined', { name: promoted.name, avatar: promoted.avatarUrl });
-            }
-
-            io.to(code).emit('spectator-count', room.spectators.length);
-            console.log(`Room ${code}: spectator promoted to ${isP1 ? 'p1' : 'p2'}`);
-        } else {
-            // No spectators - close room
+        if (!promoteSpectatorToPlayer(room, io, code, isP1)) {
             socket.to(code).emit('opponent-left');
             if (room.instanceId) activityRooms.delete(room.instanceId);
             rooms.delete(code);
