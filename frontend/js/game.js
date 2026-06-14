@@ -427,21 +427,13 @@ function handleTapWall(row, col, orientation) {
     if (cp === 'p1' && gameState.wallCounts.p1 === 0) return;
     if (cp === 'p2' && gameState.wallCounts.p2 === 0) return;
 
-    if (tapPreview && tapPreview.row === row && tapPreview.col === col && tapPreview.orientation === orientation) {
-        // Second tap on same spot: confirm. The preview already grew in,
-        // so skip the board grow animation to avoid playing it twice.
-        clearTapPreview();
-        placeWall(row, col, orientation, false);
-    } else {
-        // First tap or different spot → lock preview
-        const wallKey = JSON.stringify({ row, col, orientation });
-        if (gameState.walls.has(wallKey) || hasWallOverlap(row, col, orientation)) return;
-        if (!wallKeepsPathsOpen(wallKey)) return;
-        tapPreview = { row, col, orientation, t0: performance.now() };
-        playSound('Select');
-        if (animEnabled) ensureAnimLoop(); else render();
-        updateTapHint();
-    }
+    const wallKey = JSON.stringify({ row, col, orientation });
+    if (gameState.walls.has(wallKey) || hasWallOverlap(row, col, orientation)) return;
+    if (!wallKeepsPathsOpen(wallKey)) return;
+    tapPreview = { row, col, orientation, t0: performance.now() };
+    playSound('Select');
+    if (animEnabled) ensureAnimLoop(); else render();
+    updateTapHint();
 }
 
 function computeHoverState(cellX, cellY, inHGap, inVGap) {
