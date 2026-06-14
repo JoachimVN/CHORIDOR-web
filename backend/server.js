@@ -130,6 +130,50 @@ function cancelPromotion(room, io, code) {
     return { slot, remainingId };
 }
 
+function closeRoom(room, code, notifySocketId) {
+    if (notifySocketId) io.sockets.sockets.get(notifySocketId)?.emit('opponent-left');
+    if (room.instanceId) activityRooms.delete(room.instanceId);
+    rooms.delete(code);
+    console.log(`Room ${code} closed`);
+}
+
+function handleSpectatorDisconnect(room, code, socketId) {
+    if (room.pendingPromotion?.spectator.socketId !== socketId) {
+        room.spectators = room.spectators.filter(s => s.socketId !== socketId);
+        io.to(code).emit('spectator-count', room.spectators.length);
+        return;
+    }
+    // The offered spectator left — cancel and try the next one
+    const { slot, remainingId } = room.pendingPromotion;
+    cancelPromotion(room, io, code);
+    room.spectators = room.spectators.filter(s => s.socketId !== socketId);
+    io.to(code).emit('spectator-count', room.spectators.length);
+
+    if (!offerSpectatorPromotion(room, io, code, slot)) {
+        const slotEmpty = slot === 'p1' ? !room.p1 : !room.p2;
+        if (slotEmpty) closeRoom(room, code, remainingId);
+    }
+}
+
+function handlePlayerDisconnect(room, code, socket, isP1) {
+    if (room.pendingPromotion) {
+        cancelPromotion(room, io, code);
+        socket.to(code).emit('opponent-left');
+        if (room.instanceId) activityRooms.delete(room.instanceId);
+        rooms.delete(code);
+        console.log(`Room ${code} closed (player left during pending promotion)`);
+        return;
+    }
+    if (isP1) room.p1 = null; else room.p2 = null;
+    const slot = isP1 ? 'p1' : 'p2';
+    if (!offerSpectatorPromotion(room, io, code, slot)) {
+        socket.to(code).emit('opponent-left');
+        if (room.instanceId) activityRooms.delete(room.instanceId);
+        rooms.delete(code);
+        console.log(`Room ${code} closed`);
+    }
+}
+
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 app.post('/auth/discord', express.json(), async (req, res) => {
@@ -367,9 +411,7 @@ io.on('connection', socket => {
     });
 
     socket.on('disconnect', () => {
-        if (socket.data.pendingInstanceId) {
-            pendingActivities.delete(socket.data.pendingInstanceId);
-        }
+        if (socket.data.pendingInstanceId) pendingActivities.delete(socket.data.pendingInstanceId);
         const code = socket.data.roomCode;
         if (!code) return;
         const room = rooms.get(code);
@@ -378,54 +420,8 @@ io.on('connection', socket => {
         const isP1 = room.p1 === socket.id;
         const isP2 = room.p2 === socket.id;
 
-        if (!isP1 && !isP2) {
-            // Spectator disconnected
-            if (room.pendingPromotion?.spectator.socketId === socket.id) {
-                // The offered spectator left - cancel and try next
-                const { slot, remainingId } = room.pendingPromotion;
-                cancelPromotion(room, io, code);
-                room.spectators = room.spectators.filter(s => s.socketId !== socket.id);
-                io.to(code).emit('spectator-count', room.spectators.length);
-
-                if (!offerSpectatorPromotion(room, io, code, slot)) {
-                    // No more spectators - close room if slot was empty
-                    const slotEmpty = slot === 'p1' ? !room.p1 : !room.p2;
-                    if (slotEmpty) {
-                        io.sockets.sockets.get(remainingId)?.emit('opponent-left');
-                        if (room.instanceId) activityRooms.delete(room.instanceId);
-                        rooms.delete(code);
-                        console.log(`Room ${code} closed, no spectators remaining`);
-                    }
-                }
-            } else {
-                room.spectators = room.spectators.filter(s => s.socketId !== socket.id);
-                io.to(code).emit('spectator-count', room.spectators.length);
-            }
-            return;
-        }
-
-        // A player disconnected
-        if (room.pendingPromotion) {
-            // Cancel any in-progress offer and close room
-            cancelPromotion(room, io, code);
-            socket.to(code).emit('opponent-left');
-            if (room.instanceId) activityRooms.delete(room.instanceId);
-            rooms.delete(code);
-            console.log(`Room ${code} closed (player left during pending promotion)`);
-            return;
-        }
-
-        // Vacate the slot and offer to spectators
-        if (isP1) room.p1 = null; else room.p2 = null;
-        const slot = isP1 ? 'p1' : 'p2';
-
-        if (!offerSpectatorPromotion(room, io, code, slot)) {
-            // No spectators - emit opponent-left and close
-            socket.to(code).emit('opponent-left');
-            if (room.instanceId) activityRooms.delete(room.instanceId);
-            rooms.delete(code);
-            console.log(`Room ${code} closed`);
-        }
+        if (!isP1 && !isP2) { handleSpectatorDisconnect(room, code, socket.id); return; }
+        handlePlayerDisconnect(room, code, socket, isP1);
     });
 });
 
