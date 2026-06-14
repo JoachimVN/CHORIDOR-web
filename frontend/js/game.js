@@ -87,8 +87,9 @@ let onlineMode          = false;
 let opponentName        = '';
 let opponentAvatar      = '';
 let myAvatar            = '';
-let rematchState        = 'idle'; // 'idle' | 'waiting' | 'incoming'
-let lobbyOpenedFromWin  = false;  // true when Change Mode opened lobby without disconnecting
+let rematchState           = 'idle'; // 'idle' | 'waiting' | 'incoming'
+let softLobby              = false;  // lobby open but game still alive behind it
+let softLobbyRestoreWin    = false;  // win overlay was showing when lobby opened
 
 const isDiscord       = location.hostname.endsWith('.discordsays.com');
 let discordInstanceId = null;
@@ -938,7 +939,7 @@ function initSocket(errorElId, callback) {
 
     socket.on('rematch-requested', () => {
         updateRematchBtn('incoming');
-        if (lobbyOpenedFromWin) showToast('Opponent wants a rematch!');
+        if (softLobby) showToast('Opponent wants a rematch!');
     });
     socket.on('rematch-cancelled', () => updateRematchBtn('idle'));
 
@@ -946,8 +947,8 @@ function initSocket(errorElId, callback) {
         onlineRole     = onlineRole === 'p1' ? 'p2' : 'p1';
         opponentName   = onlineRole === 'p1' ? (p2Name   || '') : (p1Name   || '');
         opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
-        if (lobbyOpenedFromWin) {
-            lobbyOpenedFromWin = false;
+        if (softLobby) {
+            softLobby = false; softLobbyRestoreWin = false;
             document.getElementById('lobby-overlay').classList.add('hidden');
             document.getElementById('btn-lobby-back').classList.add('hidden');
         }
@@ -1132,10 +1133,10 @@ if (discordNameInput) {
 
 document.getElementById('btn-local').addEventListener('click', () => {
     playSound('Select');
-    if (lobbyOpenedFromWin) {
+    if (softLobby) {
         onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
         socket?.disconnect(); socket = null;
-        lobbyOpenedFromWin = false;
+        softLobby = false; softLobbyRestoreWin = false;
         resetGame();
     }
     applyPlayerNames();
@@ -1144,10 +1145,10 @@ document.getElementById('btn-local').addEventListener('click', () => {
 
 document.getElementById('btn-online').addEventListener('click', () => {
     playSound('Select');
-    if (lobbyOpenedFromWin) {
+    if (softLobby) {
         onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
         socket?.disconnect(); socket = null;
-        lobbyOpenedFromWin = false;
+        softLobby = false; softLobbyRestoreWin = false;
         resetGame();
     }
     showLobbyView('lview-online');
@@ -1155,16 +1156,18 @@ document.getElementById('btn-online').addEventListener('click', () => {
 document.getElementById('btn-online-back').addEventListener('click', () => {
     playSound('Select');
     showLobbyView('lview-mode');
-    if (lobbyOpenedFromWin) document.getElementById('btn-lobby-back').classList.remove('hidden');
+    if (softLobby) document.getElementById('btn-lobby-back').classList.remove('hidden');
 });
 
 document.getElementById('btn-lobby-back').addEventListener('click', () => {
-    if (!lobbyOpenedFromWin) return;
+    if (!softLobby) return;
     playSound('Select');
-    lobbyOpenedFromWin = false;
+    const restoreWin = softLobbyRestoreWin;
+    softLobby = false; softLobbyRestoreWin = false;
     document.getElementById('btn-lobby-back').classList.add('hidden');
     document.getElementById('lobby-overlay').classList.add('hidden');
-    document.getElementById('win-overlay').classList.remove('hidden');
+    if (restoreWin) document.getElementById('win-overlay').classList.remove('hidden');
+    // else: game board is already visible behind the lobby
 });
 
 document.getElementById('btn-create').addEventListener('click', () => {
@@ -1242,25 +1245,26 @@ document.getElementById('btn-rematch')?.addEventListener('click', () => {
     }
 });
 
-function openLobbyFromWin() {
-    lobbyOpenedFromWin = true;
+function openSoftLobby(fromWin = false) {
+    softLobby           = true;
+    softLobbyRestoreWin = fromWin;
     document.getElementById('win-overlay').classList.add('hidden');
     document.getElementById('win-footer').classList.add('hidden');
     document.getElementById('lobby-overlay').classList.remove('hidden');
     document.getElementById('btn-lobby-back').classList.remove('hidden');
     showLobbyView(isDiscord ? 'lview-discord' : 'lview-mode');
     applyPlayerNames();
-    // Socket stays connected — opponent can still request rematch
+    // Socket and game state stay intact until user picks a new mode
 }
 
 document.getElementById('btn-change-mode').addEventListener('click', () => {
     playSound('Select');
-    openLobbyFromWin();
+    openSoftLobby(true);
 });
 
 document.getElementById('win-footer-change-mode').addEventListener('click', () => {
     playSound('Select');
-    openLobbyFromWin();
+    openSoftLobby(true);
 });
 
 document.getElementById('btn-join-confirm').addEventListener('click', () => {
@@ -1406,13 +1410,7 @@ document.getElementById('change-mode-btn').addEventListener('click', () => {
         cmIcon.getBoundingClientRect();
         cmIcon.style.animation = 'ctrl-icon-pop 0.34s ease';
     }
-    onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
-    socket?.disconnect(); socket = null;
-    document.getElementById('win-overlay').classList.add('hidden');
-    document.getElementById('lobby-overlay').classList.remove('hidden');
-    showLobbyView(isDiscord ? 'lview-discord' : 'lview-mode');
-    applyPlayerNames();
-    resetGame();
+    openSoftLobby(gameState.gameOver);
 });
 
 // ─── Discord Activity ─────────────────────────────────────────────────────
