@@ -133,24 +133,22 @@
     <!-- Win screen -->
     <div id="win-overlay" class="win-overlay hidden">
         <div class="win-card" id="win-card">
+            <button class="win-card-close" id="win-card-close" aria-label="Close">✕</button>
             <div class="win-pawn" id="win-pawn"></div>
             <div class="win-title" id="win-message"></div>
             <div class="win-divider"></div>
 
             <div class="win-stats" id="win-stats">
-                <button class="win-stats-close" id="win-stats-close" aria-label="Hide stats">✕</button>
-                <div class="win-stats-grid">
-                    <div class="win-stat-col">
-                        <div class="win-stat-name" id="win-stat-p1-name">Player 1</div>
-                        <div class="win-stat-walls" id="win-stat-p1-walls"></div>
-                        <div class="win-stat-moves" id="win-stat-p1-moves">0 moves</div>
-                    </div>
-                    <div class="win-stat-sep"></div>
-                    <div class="win-stat-col">
-                        <div class="win-stat-name" id="win-stat-p2-name">Player 2</div>
-                        <div class="win-stat-walls" id="win-stat-p2-walls"></div>
-                        <div class="win-stat-moves" id="win-stat-p2-moves">0 moves</div>
-                    </div>
+                <div class="win-stat-col">
+                    <div class="win-stat-name" id="win-stat-p1-name">Player 1</div>
+                    <div class="win-stat-walls" id="win-stat-p1-walls"></div>
+                    <div class="win-stat-moves" id="win-stat-p1-moves">0</div>
+                </div>
+                <div class="win-stat-sep"></div>
+                <div class="win-stat-col">
+                    <div class="win-stat-name" id="win-stat-p2-name">Player 2</div>
+                    <div class="win-stat-walls" id="win-stat-p2-walls"></div>
+                    <div class="win-stat-moves" id="win-stat-p2-moves">0</div>
                 </div>
             </div>
 
@@ -164,6 +162,13 @@
             <button id="btn-rematch" class="win-btn hidden">Rematch</button>
             <button id="btn-leave"   class="win-btn hidden">Leave</button>
         </div>
+    </div>
+
+    <!-- Shown when win overlay is dismissed in online mode -->
+    <div id="win-footer" class="win-footer hidden">
+        <span class="win-footer-label">Game over</span>
+        <button id="win-footer-rematch" class="win-footer-btn">Rematch</button>
+        <button id="win-footer-leave"   class="win-footer-btn win-footer-muted hidden">Leave</button>
     </div>
 
     <div class="app">

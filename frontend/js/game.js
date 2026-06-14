@@ -81,13 +81,14 @@ let newGameIconDeg = 0;
 
 // ─── Online state ─────────────────────────────────────────────────────────
 
-let socket         = null;
-let onlineRole     = null;   // 'p1' | 'p2' | null
-let onlineMode     = false;
-let opponentName   = '';
-let opponentAvatar = '';
-let myAvatar       = '';
-let rematchState   = 'idle'; // 'idle' | 'waiting' | 'incoming'
+let socket              = null;
+let onlineRole          = null;   // 'p1' | 'p2' | null
+let onlineMode          = false;
+let opponentName        = '';
+let opponentAvatar      = '';
+let myAvatar            = '';
+let rematchState        = 'idle'; // 'idle' | 'waiting' | 'incoming'
+let lobbyOpenedFromWin  = false;  // true when Change Mode opened lobby without disconnecting
 
 const isDiscord       = location.hostname.endsWith('.discordsays.com');
 let discordInstanceId = null;
@@ -795,11 +796,11 @@ function populateWinStats() {
     document.getElementById('win-stat-p1-name').textContent = document.getElementById('p1-name').textContent;
     document.getElementById('win-stat-p2-name').textContent = document.getElementById('p2-name').textContent;
 
-    const m1 = gameState.movesP1, m2 = gameState.movesP2;
-    document.getElementById('win-stat-p1-moves').innerHTML = `<strong>${m1}</strong> move${m1 !== 1 ? 's' : ''}`;
-    document.getElementById('win-stat-p2-moves').innerHTML = `<strong>${m2}</strong> move${m2 !== 1 ? 's' : ''}`;
-
     ['p1', 'p2'].forEach(p => {
+        const m = gameState[p === 'p1' ? 'movesP1' : 'movesP2'];
+        const el = document.getElementById(`win-stat-${p}-moves`);
+        el.innerHTML = `<strong>${m}</strong>move${m !== 1 ? 's' : ''}`;
+
         const container = document.getElementById(`win-stat-${p}-walls`);
         container.innerHTML = '';
         const remaining = gameState.wallCounts[p];
@@ -810,8 +811,6 @@ function populateWinStats() {
             container.appendChild(box);
         }
     });
-
-    document.getElementById('win-stats').classList.remove('hidden');
 }
 
 function showWinScreen(winner, playerClass, delay = 0) {
@@ -831,6 +830,7 @@ function showWinScreen(winner, playerClass, delay = 0) {
 
     const reveal = () => {
         playSound('Win');
+        document.getElementById('win-footer').classList.add('hidden');
         const card = document.getElementById('win-card');
         card.style.animation = 'none';
         card.getBoundingClientRect();
@@ -859,6 +859,7 @@ function resetGame() {
         movesP2:       0,
     };
     document.getElementById('win-overlay').classList.add('hidden');
+    document.getElementById('win-footer').classList.add('hidden');
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
@@ -1043,15 +1044,16 @@ function getMyName() {
 
 function updateRematchBtn(state) {
     rematchState = state;
-    const btn = document.getElementById('btn-rematch');
-    if (!btn) return;
     let modifier = '';
     let label    = 'Rematch';
     if (state === 'waiting')  { modifier = ' waiting';  label = 'Waiting…'; }
     if (state === 'incoming') { modifier = ' incoming'; label = 'Accept Rematch!'; }
-    btn.className   = 'win-btn' + modifier;
-    btn.textContent = label;
-    btn.disabled    = false;
+
+    const btn = document.getElementById('btn-rematch');
+    if (btn) { btn.className = 'win-btn' + modifier; btn.textContent = label; btn.disabled = false; }
+
+    const footer = document.getElementById('win-footer-rematch');
+    if (footer) { footer.className = 'win-footer-btn' + modifier; footer.textContent = label; }
 }
 
 function setPlayerAvatar(slot, url) {
@@ -1174,8 +1176,20 @@ document.getElementById('btn-discord-cancel')?.addEventListener('click', () => {
     document.getElementById('discord-error')?.classList.add('hidden');
 });
 
-document.getElementById('win-stats-close').addEventListener('click', () => {
-    document.getElementById('win-stats').classList.add('hidden');
+document.getElementById('win-card-close').addEventListener('click', () => {
+    document.getElementById('win-overlay').classList.add('hidden');
+    if (onlineMode) document.getElementById('win-footer').classList.remove('hidden');
+});
+
+document.getElementById('win-footer-rematch').addEventListener('click', () => {
+    playSound('Select');
+    if (rematchState === 'idle' || rematchState === 'incoming') {
+        socket?.emit('rematch-request');
+        updateRematchBtn('waiting');
+    } else if (rematchState === 'waiting') {
+        socket?.emit('rematch-cancel');
+        updateRematchBtn('idle');
+    }
 });
 
 document.getElementById('btn-rematch')?.addEventListener('click', () => {
