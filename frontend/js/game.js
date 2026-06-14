@@ -1606,12 +1606,11 @@ if (isDiscord) try {
             const rawDisplay = String(data.username || '');
             const rawHandle  = String(data.handle   || '');
             const sanitize   = s => s.replace(/[^a-zA-Z0-9 _.\-#]/g, '').trim().slice(0, 20);
+            const valid      = s => /^[a-zA-Z0-9 _.\-#]{1,20}$/.test(s);
             const safeDisplay = sanitize(rawDisplay);
             const safeHandle  = sanitize(rawHandle);
-            const safeName = (safeDisplay && /^[a-zA-Z0-9 _.\-#]{1,20}$/.test(safeDisplay))
-                ? safeDisplay
-                : safeHandle;
-            if (safeName) {
+            const safeName = valid(safeDisplay) ? safeDisplay : safeHandle;
+            if (valid(safeName)) {
                 localStorage.setItem('choridor_player_name', safeName);
                 if (nameInput) nameInput.value = safeName;
             }
