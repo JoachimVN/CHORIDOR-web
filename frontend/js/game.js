@@ -1002,7 +1002,10 @@ function initSocket(errorElId, callback) {
         // Keep onlineMode=true so New Game/Change Mode still route to the lobby
         opponentName   = '';
         opponentAvatar = '';
-        if (isDiscord) setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
+        if (isDiscord) {
+            setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
+            socket.emit('join-activity', { instanceId: discordInstanceId, name: getMyName(), avatarUrl: myAvatar });
+        }
         gameState.gameOver = true;
         hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
         clearTapPreview();
