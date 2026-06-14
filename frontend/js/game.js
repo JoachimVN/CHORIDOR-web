@@ -1418,7 +1418,7 @@ document.getElementById('change-mode-btn').addEventListener('click', () => {
 // ─── Discord Activity ─────────────────────────────────────────────────────
 
 if (isDiscord) try {
-    const { DiscordSDK } = await import('https://esm.sh/@discord/embedded-app-sdk@1');
+    const { DiscordSDK } = await import('./vendor/discord-sdk.mjs');
     const sdk = new DiscordSDK('1515199692793843712');
     await sdk.ready();
     discordInstanceId = sdk.instanceId;
