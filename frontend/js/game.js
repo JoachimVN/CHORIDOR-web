@@ -1066,7 +1066,7 @@ function initSocket(errorElId, callback) {
         if (spectatorMode) updateSpectatorBanner(null);
     });
 
-    socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar, snapshot } = {}) => {
+    socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar } = {}) => {
         spectatorMode  = false;
         onlineRole     = role;
         onlineMode     = true;
@@ -1075,12 +1075,14 @@ function initSocket(errorElId, callback) {
         matchStartTime = Date.now();
         document.getElementById('p1-name').textContent = p1Name || 'Player 1';
         document.getElementById('p2-name').textContent = p2Name || 'Player 2';
+        setPlayerAvatar('p1', p1Avatar || '');
+        setPlayerAvatar('p2', p2Avatar || '');
         applyPlayerNames();
-        if (snapshot) {
-            applyGameSnapshot(snapshot);
-            gameState.flipped = role === 'p2';
-            updateWallCounts();
-        }
+        gameState.flipped = role === 'p2';
+        document.getElementById('win-overlay').classList.add('hidden');
+        document.getElementById('win-footer').classList.add('hidden');
+        clearTapPreview();
+        resetGame();
         updateSpectatorBanner(0);
         updateSpectatorCountUI(spectatorCount);
         updateStatus();
@@ -1092,6 +1094,9 @@ function initSocket(errorElId, callback) {
         opponentName   = name || '';
         opponentAvatar = avatar || '';
         applyPlayerNames();
+        document.getElementById('win-overlay').classList.add('hidden');
+        document.getElementById('win-footer').classList.add('hidden');
+        resetGame();
         updateStatus();
     });
 }
@@ -1369,11 +1374,12 @@ document.getElementById('btn-copy-link').addEventListener('click', () => {
 
 document.getElementById('win-card-close').addEventListener('click', () => {
     document.getElementById('win-overlay').classList.add('hidden');
-    if (onlineMode) document.getElementById('win-footer').classList.remove('hidden');
+    if (onlineMode && !spectatorMode) document.getElementById('win-footer').classList.remove('hidden');
 });
 
 document.getElementById('win-footer-rematch').addEventListener('click', () => {
     playSound('Select');
+    if (spectatorMode) return;
     if (rematchState === 'idle' || rematchState === 'incoming') {
         socket?.emit('rematch-request');
         updateRematchBtn('waiting');

@@ -69,11 +69,12 @@ function promoteSpectatorToPlayer(room, io, code, isP1) {
     if (isP1) { room.p1 = promoted.socketId; room.p1Name = promoted.name; room.p1Avatar = promoted.avatarUrl; }
     else      { room.p2 = promoted.socketId; room.p2Name = promoted.name; room.p2Avatar = promoted.avatarUrl; }
 
+    room.snapshot = makeSnapshot();
+
     promotedSocket.emit('become-player', {
         role:     isP1 ? 'p1' : 'p2',
         p1Name:   room.p1Name, p2Name:   room.p2Name,
         p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
-        snapshot: room.snapshot,
     });
 
     const remainingSocket = io.sockets.sockets.get(isP1 ? room.p2 : room.p1);
