@@ -1490,29 +1490,13 @@ document.getElementById('btn-step-aside').addEventListener('click', () => {
     socket?.emit('step-aside');
 });
 
-document.getElementById('spectator-offer-accept').addEventListener('click', () => {
-    playSound('Select');
-    document.getElementById('spectator-offer-bar').classList.add('hidden');
-    socket?.emit('accept-spectator');
-});
-
-document.getElementById('spectator-offer-decline').addEventListener('click', () => {
-    playSound('Select');
-    document.getElementById('spectator-offer-bar').classList.add('hidden');
-    socket?.emit('decline-spectator');
-});
-
-document.getElementById('spectator-slot-accept').addEventListener('click', () => {
-    playSound('Select');
-    document.getElementById('spectator-slot-bar').classList.add('hidden');
-    socket?.emit('accept-spectator');
-});
-
-document.getElementById('spectator-slot-decline').addEventListener('click', () => {
-    playSound('Select');
-    document.getElementById('spectator-slot-bar').classList.add('hidden');
-    socket?.emit('decline-spectator');
-});
+function spectatorBarBtn(barId, event) {
+    return () => { playSound('Select'); document.getElementById(barId).classList.add('hidden'); socket?.emit(event); };
+}
+document.getElementById('spectator-offer-accept') .addEventListener('click', spectatorBarBtn('spectator-offer-bar', 'accept-spectator'));
+document.getElementById('spectator-offer-decline').addEventListener('click', spectatorBarBtn('spectator-offer-bar', 'decline-spectator'));
+document.getElementById('spectator-slot-accept')  .addEventListener('click', spectatorBarBtn('spectator-slot-bar',  'accept-spectator'));
+document.getElementById('spectator-slot-decline') .addEventListener('click', spectatorBarBtn('spectator-slot-bar',  'decline-spectator'));
 
 document.getElementById('discord-find-match-btn').addEventListener('click', () => {
     playSound('Select');
