@@ -1593,7 +1593,7 @@ if (isDiscord) try {
         if (data.username) {
             myAvatar = data.avatarUrl || '';
             const safeName = String(data.username).replace(/[^a-zA-Z0-9 _.\-#]/g, '').trim().slice(0, 20);
-            if (safeName) {
+            if (safeName && /^[a-zA-Z0-9 _.\-#]{1,20}$/.test(safeName)) {
                 localStorage.setItem('choridor_player_name', safeName);
                 if (nameInput) nameInput.value = safeName;
             }
