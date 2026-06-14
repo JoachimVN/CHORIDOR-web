@@ -165,13 +165,6 @@
         </div>
     </div>
 
-    <!-- Shown when win overlay is dismissed in online mode -->
-    <div id="win-footer" class="win-footer hidden">
-        <span class="win-footer-label">Game over</span>
-        <button id="win-footer-rematch"     class="win-footer-btn">Rematch</button>
-        <button id="win-footer-change-mode" class="win-footer-btn win-footer-muted">Change Mode</button>
-    </div>
-
     <div class="app">
         <div class="top-bar">
             <div class="player-section p1-section">
@@ -192,6 +185,13 @@
         <div class="board-wrapper">
             <canvas id="gameBoard"></canvas>
             <output id="tap-toast" class="tap-toast" aria-live="polite" aria-hidden="true"></output>
+        </div>
+
+        <!-- Shown when win overlay is dismissed in online mode -->
+        <div id="win-footer" class="win-footer hidden">
+            <span class="win-footer-label">Game over</span>
+            <button id="win-footer-rematch"     class="win-footer-btn">Rematch</button>
+            <button id="win-footer-change-mode" class="win-footer-btn win-footer-muted">Change Mode</button>
         </div>
 
         <div class="bottom-bar">

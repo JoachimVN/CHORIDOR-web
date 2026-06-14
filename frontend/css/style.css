@@ -528,11 +528,6 @@ button:active {
 
 /* Win footer — shown when win card is dismissed (online only) */
 .win-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 999;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -541,11 +536,7 @@ button:active {
     background: rgba(10, 12, 20, 0.96);
     backdrop-filter: blur(10px);
     border-top: 1px solid #1A1E32;
-}
-
-/* Push the bottom bar up so the footer doesn't cover it */
-.win-footer:not(.hidden) ~ .app {
-    padding-bottom: 43px;
+    flex-shrink: 0;
 }
 
 .win-footer.hidden { display: none; }
