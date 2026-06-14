@@ -1151,17 +1151,6 @@ if (joinNameInput) {
 applyPlayerNames();
 if (isDiscord) showLobbyView('lview-discord');
 
-const discordNameInput = document.getElementById('discord-name-input');
-if (discordNameInput) {
-    discordNameInput.value = savedName;
-    discordNameInput.addEventListener('input', () => {
-        const val = discordNameInput.value.trim();
-        if (val) localStorage.setItem('choridor_player_name', val);
-        else localStorage.removeItem('choridor_player_name');
-        if (nameInput) nameInput.value = discordNameInput.value;
-    });
-}
-
 document.getElementById('btn-local').addEventListener('click', () => {
     playSound('Select');
     if (softLobby) {
@@ -1471,16 +1460,10 @@ if (isDiscord) try {
         const data = await res.json();
         if (data.username) {
             myAvatar = data.avatarUrl || '';
-            if (!localStorage.getItem('choridor_player_name')) {
-                const safeName = String(data.username).replace(/[^a-zA-Z0-9 _.\-#]/g, '').trim().slice(0, 20);
-                const dni = document.getElementById('discord-name-input');
-                if (dni) {
-                    dni.value = safeName;
-                    dni.dispatchEvent(new Event('input'));
-                } else if (nameInput) {
-                    nameInput.value = safeName;
-                    nameInput.dispatchEvent(new Event('input'));
-                }
+            const safeName = String(data.username).replace(/[^a-zA-Z0-9 _.\-#]/g, '').trim().slice(0, 20);
+            if (safeName) {
+                localStorage.setItem('choridor_player_name', safeName);
+                if (nameInput) nameInput.value = safeName;
             }
         }
     } catch (authErr) {
