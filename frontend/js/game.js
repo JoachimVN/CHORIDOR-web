@@ -899,7 +899,8 @@ function showWinScreen(winner, playerClass, delay = 0) {
     populateWinStats();
 
     const reveal = () => {
-        playSound('Win');
+        const lost = onlineMode && onlineRole && onlineRole !== playerClass;
+        playSound(lost ? 'Loss' : 'Win');
         document.getElementById('win-footer').classList.add('hidden');
         const card = document.getElementById('win-card');
         card.style.animation = 'none';
