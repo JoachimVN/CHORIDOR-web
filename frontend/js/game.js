@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.7.0';
+const APP_VERSION = 'v1.8.0';
 document.querySelectorAll('.lobby-version').forEach(el => { el.textContent = APP_VERSION; });
 
 const BOARD_SIZE = 9;
@@ -448,7 +448,7 @@ function clientToCell(clientX, clientY) {
 
 let _suppressNextClick = false;
 let dragState = null; // { fromTouch, isDragging, startX, startY } | null
-const DRAG_THRESHOLD = 6; // board-space px; below this a gesture is a tap, not a drag
+const DRAG_THRESHOLD = 12; // board-space px; below this a gesture is a tap, not a drag
 
 // ─── Click handling ───────────────────────────────────────────────────────
 
@@ -517,7 +517,11 @@ canvas.addEventListener('mousemove', e => {
     }
 
     const prev = JSON.stringify(hoverState);
-    hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
+    if (dragState?.isDragging && !dragState.fromTouch && !gameState.gameOver && isMyTurn()) {
+        hoverState = nearestWallToPoint(x, y);
+    } else {
+        hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
+    }
 
     let pointer = false;
     if (hoverState.moveRow !== null) {
@@ -543,10 +547,27 @@ canvas.addEventListener('mouseleave', () => {
 });
 
 // ─── Drag-to-place ────────────────────────────────────────────────────────
-// Drag any distance across the board; release on a wall gap to place (or lock
-// a confirm-mode preview). Short taps fall through to the existing click handler.
+// Drag across the board; the wall preview snaps to the nearest valid gap and
+// follows the finger/cursor. Release to place (or lock a confirm-mode preview).
+// Short taps fall through to the existing click handler unchanged.
 
 const EMPTY_HOVER = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
+
+// Returns the nearest wall slot (H or V) to board-space point (x, y).
+function nearestWallToPoint(x, y) {
+    const halfGap = GAP / 2;
+    // Nearest H gap: horizontal wall between rows
+    const hRow  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((y - CELL_SIZE - halfGap) / STEP)));
+    const hCol  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.floor(x / STEP)));
+    const hDist = Math.abs(y - (hRow * STEP + CELL_SIZE + halfGap));
+    // Nearest V gap: vertical wall between columns
+    const vCol  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((x - CELL_SIZE - halfGap) / STEP)));
+    const vRow  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.floor(y / STEP)));
+    const vDist = Math.abs(x - (vCol * STEP + CELL_SIZE + halfGap));
+    return hDist <= vDist
+        ? { wallRow: hRow, wallCol: hCol, wallOrientation: 'H', moveRow: null, moveCol: null }
+        : { wallRow: vRow, wallCol: vCol, wallOrientation: 'V', moveRow: null, moveCol: null };
+}
 
 function commitWallAtHover() {
     const { wallRow, wallCol, wallOrientation } = hoverState;
@@ -561,12 +582,13 @@ canvas.addEventListener('touchstart', e => {
     if (gameState.gameOver || !isMyTurn() || flipAnimating) return;
     if (e.touches.length !== 1) { dragState = null; return; }
     const t = e.touches[0];
-    const { x, y, cellX, cellY, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
+    const { x, y, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
     dragState = { fromTouch: true, isDragging: false, startX: x, startY: y };
     if (inHGap || inVGap) {
-        hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
+        // Immediate snap preview when finger lands directly on a gap
+        hoverState = nearestWallToPoint(x, y);
         render();
-        e.preventDefault(); // prevent scroll when starting on a wall gap
+        e.preventDefault();
     }
 }, { passive: false });
 
@@ -574,13 +596,13 @@ canvas.addEventListener('touchmove', e => {
     if (!dragState?.fromTouch) return;
     if (e.touches.length > 1) { dragState = null; return; }
     const t = e.touches[0];
-    const { x, y, cellX, cellY, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
+    const { x, y } = clientToCell(t.clientX, t.clientY);
     const dx = x - dragState.startX, dy = y - dragState.startY;
     if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) dragState.isDragging = true;
-    if (dragState.isDragging) e.preventDefault(); // lock scroll once clearly dragging
-    const prev = JSON.stringify(hoverState);
-    hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
-    if (JSON.stringify(hoverState) !== prev) render();
+    if (!dragState.isDragging) return;
+    e.preventDefault();
+    const next = nearestWallToPoint(x, y);
+    if (JSON.stringify(hoverState) !== JSON.stringify(next)) { hoverState = next; render(); }
 }, { passive: false });
 
 canvas.addEventListener('touchend', e => {
@@ -590,8 +612,8 @@ canvas.addEventListener('touchend', e => {
     if (!wasDragging) return; // short tap — let the synthetic click handle it normally
     _suppressNextClick = true;
     const t = e.changedTouches[0];
-    const { cellX, cellY, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
-    hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
+    const { x, y } = clientToCell(t.clientX, t.clientY);
+    hoverState = nearestWallToPoint(x, y);
     if (!commitWallAtHover()) { hoverState = EMPTY_HOVER; render(); }
 });
 
