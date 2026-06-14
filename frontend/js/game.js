@@ -110,7 +110,9 @@ function setDiscordPresence(activity) {
     if (!discordSdk) return;
     clearTimeout(_presenceTimer);
     _presenceTimer = setTimeout(() => {
-        discordSdk.commands.setActivity(activity).catch(err => console.warn('setActivity failed:', err));
+        discordSdk.commands.setActivity(activity)
+            .then(() => showToast('RP ok'))
+            .catch(err => showToast('RP err: ' + (err?.message || err?.code || JSON.stringify(err))));
     }, 500);
 }
 
