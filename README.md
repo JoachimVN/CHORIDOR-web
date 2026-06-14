@@ -61,6 +61,7 @@ The desktop version ([JoachimVN/CHORIDOR](https://github.com/JoachimVN/CHORIDOR)
       Online multiplayer<br>
       Discord Activity<br>
       Spectator queue<br>
+      Animations<br>
       Plays in any browser, no install<br>
     </td>
   </tr>
