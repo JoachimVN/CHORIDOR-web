@@ -1053,6 +1053,7 @@ function initSocket(errorElId, callback) {
         resetGame();
         if (snapshot) { applyGameSnapshot(snapshot); updateWallCounts(); }
         hideLobby();
+        if (!isDiscord) showToast('Room is full - watching as spectator');
         updateSpectatorBanner(queuePosition || 1);
         updateSpectatorCountUI(spectatorCount);
         updateStatus();
@@ -1310,6 +1311,7 @@ document.getElementById('btn-local').addEventListener('click', () => {
     playSound('Select');
     if (softLobby) {
         onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
+        spectatorMode = false;
         socket?.disconnect(); socket = null;
         softLobby = false; softLobbyRestoreWin = false;
         resetGame();
@@ -1343,6 +1345,7 @@ document.getElementById('btn-create').addEventListener('click', () => {
     playSound('Select');
     if (softLobby) {
         onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
+        spectatorMode = false;
         socket?.disconnect(); socket = null;
         softLobby = false; softLobbyRestoreWin = false;
         resetGame();
@@ -1356,6 +1359,7 @@ document.getElementById('btn-join-back').addEventListener('click', () => { playS
 
 document.getElementById('btn-waiting-back').addEventListener('click', () => {
     playSound('Select');
+    spectatorMode = false;
     socket?.disconnect(); socket = null;
     showLobbyView('lview-mode');
 });
@@ -1428,6 +1432,7 @@ document.getElementById('btn-join-confirm').addEventListener('click', () => {
     playSound('Select');
     if (softLobby) {
         onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
+        spectatorMode = false;
         socket?.disconnect(); socket = null;
         softLobby = false; softLobbyRestoreWin = false;
         resetGame();
