@@ -103,6 +103,9 @@ let matchRoomCode     = '';
 let _presenceTimer    = null;
 if (isDiscord) document.body.classList.add('discord-activity');
 
+let spectatorMode  = false;
+let spectatorCount = 0;
+
 function setDiscordPresence(activity) {
     if (!discordSdk) return;
     clearTimeout(_presenceTimer);
@@ -112,6 +115,7 @@ function setDiscordPresence(activity) {
 }
 
 function isMyTurn() {
+    if (spectatorMode) return false;
     return !onlineMode || gameState.currentPlayer === onlineRole;
 }
 
@@ -888,9 +892,9 @@ function showWinScreen(winner, playerClass, delay = 0) {
     msg.textContent = `${winner} Wins!`;
     msg.className   = `win-title ${playerClass}`;
 
-    document.getElementById('play-again-btn').classList.toggle('hidden', onlineMode);
-    document.getElementById('btn-rematch').classList.toggle('hidden', !onlineMode);
-    document.getElementById('btn-change-mode').classList.toggle('hidden', !onlineMode);
+    document.getElementById('play-again-btn').classList.toggle('hidden', onlineMode || spectatorMode);
+    document.getElementById('btn-rematch').classList.toggle('hidden', !onlineMode || spectatorMode);
+    document.getElementById('btn-change-mode').classList.toggle('hidden', !onlineMode || spectatorMode);
     if (onlineMode) updateRematchBtn('idle');
     populateWinStats();
 
@@ -1015,6 +1019,16 @@ function initSocket(errorElId, callback) {
     socket.on('rematch-cancelled', () => updateRematchBtn('idle'));
 
     socket.on('rematch-start', ({ p1Name, p2Name, p1Avatar, p2Avatar } = {}) => {
+        if (spectatorMode) {
+            document.getElementById('p1-name').textContent = p1Name || 'Player 1';
+            document.getElementById('p2-name').textContent = p2Name || 'Player 2';
+            setPlayerAvatar('p1', p1Avatar);
+            setPlayerAvatar('p2', p2Avatar);
+            resetGame();
+            updateStatus();
+            updateLegalMoves();
+            return;
+        }
         onlineRole     = onlineRole === 'p1' ? 'p2' : 'p1';
         opponentName   = onlineRole === 'p1' ? (p2Name   || '') : (p1Name   || '');
         opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
@@ -1026,6 +1040,59 @@ function initSocket(errorElId, callback) {
         }
         applyPlayerNames();
         resetGame();
+    });
+
+    socket.on('spectate-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, snapshot, queuePosition, spectatorCount: sc } = {}) => {
+        spectatorMode  = true;
+        onlineMode     = false;
+        spectatorCount = sc || 1;
+        document.getElementById('p1-name').textContent = p1Name || 'Player 1';
+        document.getElementById('p2-name').textContent = p2Name || 'Player 2';
+        setPlayerAvatar('p1', p1Avatar || '');
+        setPlayerAvatar('p2', p2Avatar || '');
+        resetGame();
+        if (snapshot) { applyGameSnapshot(snapshot); updateWallCounts(); }
+        hideLobby();
+        updateSpectatorBanner(queuePosition || 1);
+        updateSpectatorCountUI(spectatorCount);
+        updateStatus();
+        updateLegalMoves();
+        render();
+    });
+
+    socket.on('spectator-count', count => {
+        spectatorCount = count;
+        updateSpectatorCountUI(count);
+        if (spectatorMode) updateSpectatorBanner(null);
+    });
+
+    socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar, snapshot } = {}) => {
+        spectatorMode  = false;
+        onlineRole     = role;
+        onlineMode     = true;
+        opponentName   = role === 'p1' ? (p2Name || '') : (p1Name || '');
+        opponentAvatar = role === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
+        matchStartTime = Date.now();
+        document.getElementById('p1-name').textContent = p1Name || 'Player 1';
+        document.getElementById('p2-name').textContent = p2Name || 'Player 2';
+        applyPlayerNames();
+        if (snapshot) {
+            applyGameSnapshot(snapshot);
+            gameState.flipped = role === 'p2';
+            updateWallCounts();
+        }
+        updateSpectatorBanner(0);
+        updateSpectatorCountUI(spectatorCount);
+        updateStatus();
+        updateLegalMoves();
+        render();
+    });
+
+    socket.on('opponent-rejoined', ({ name, avatar } = {}) => {
+        opponentName   = name || '';
+        opponentAvatar = avatar || '';
+        applyPlayerNames();
+        updateStatus();
     });
 }
 
@@ -1103,6 +1170,48 @@ function showLobbyView(id) {
 
 function hideLobby() {
     document.getElementById('lobby-overlay').classList.add('hidden');
+}
+
+function applyGameSnapshot(snapshot) {
+    if (!snapshot) return;
+    gameState.p1Pawn        = { ...snapshot.p1Pawn };
+    gameState.p2Pawn        = { ...snapshot.p2Pawn };
+    gameState.wallCounts    = { ...snapshot.wallCounts };
+    gameState.currentPlayer = snapshot.currentPlayer;
+    gameState.movesP1       = snapshot.movesP1 || 0;
+    gameState.movesP2       = snapshot.movesP2 || 0;
+    gameState.gameOver      = false;
+    gameState.walls      = new Set();
+    gameState.wallOwners = new Map();
+    for (const w of (snapshot.walls || [])) {
+        const key = JSON.stringify({ row: w.row, col: w.col, orientation: w.orientation });
+        gameState.walls.add(key);
+        gameState.wallOwners.set(key, w.owner);
+    }
+}
+
+function updateSpectatorCountUI(count) {
+    const chip = document.getElementById('spectator-count');
+    const num  = document.getElementById('spectator-count-num');
+    if (!chip || !num) return;
+    if (count > 0 && (onlineMode || spectatorMode)) {
+        chip.classList.remove('hidden');
+        num.textContent = count;
+    } else {
+        chip.classList.add('hidden');
+    }
+}
+
+function updateSpectatorBanner(queuePosition) {
+    const banner   = document.getElementById('spectator-banner');
+    const queuePos = document.getElementById('spectator-queue-pos');
+    if (!banner) return;
+    if (spectatorMode) {
+        banner.classList.remove('hidden');
+        if (queuePos) queuePos.textContent = queuePosition ? `(#${queuePosition} in queue)` : '';
+    } else {
+        banner.classList.add('hidden');
+    }
 }
 
 function showLobbyError(elId, msg) {
@@ -1360,6 +1469,7 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
 });
 
 document.getElementById('new-game-btn').addEventListener('click', () => {
+    if (spectatorMode) return;
     playSound('Select');
     if (animEnabled) {
         newGameIconDeg += 360;

@@ -976,6 +976,48 @@ button:active {
     font-weight: bold;
 }
 
+/* Spectator banner (overlaid at bottom of board-wrapper) */
+.spectator-banner {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 16px;
+    background: rgba(10, 12, 20, 0.88);
+    border-top: 1px solid #1A1E32;
+    font-size: 12px;
+    font-weight: bold;
+    color: #9098B2;
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+    z-index: 5;
+}
+
+.spectator-queue-pos {
+    color: #6870A0;
+    font-weight: normal;
+    font-size: 11px;
+}
+
+/* Spectator count chip in bottom bar */
+.spectator-count-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #191C2A;
+    border: 1px solid #2A2E48;
+    color: #6870A0;
+    font-size: 11px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
 /* Legal modal */
 .legal-modal {
     position: fixed;
