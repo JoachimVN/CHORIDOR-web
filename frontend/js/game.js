@@ -1598,8 +1598,15 @@ if (isDiscord) try {
         const data = await res.json();
         if (data.username) {
             myAvatar = data.avatarUrl || '';
-            const safeName = String(data.username).replace(/[^a-zA-Z0-9 _.\-#]/g, '').trim().slice(0, 20);
-            if (safeName && /^[a-zA-Z0-9 _.\-#]{1,20}$/.test(safeName)) {
+            const rawDisplay = String(data.username || '');
+            const rawHandle  = String(data.handle   || '');
+            const sanitize   = s => s.replace(/[^a-zA-Z0-9 _.\-#]/g, '').trim().slice(0, 20);
+            const safeDisplay = sanitize(rawDisplay);
+            const safeHandle  = sanitize(rawHandle);
+            const safeName = (safeDisplay && /^[a-zA-Z0-9 _.\-#]{1,20}$/.test(safeDisplay))
+                ? safeDisplay
+                : safeHandle;
+            if (safeName) {
                 localStorage.setItem('choridor_player_name', safeName);
                 if (nameInput) nameInput.value = safeName;
             }
