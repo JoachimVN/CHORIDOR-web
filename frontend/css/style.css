@@ -39,7 +39,8 @@ body {
 .top-bar {
     background: #13151F;
     border-bottom: 1px solid #1E2130;
-    padding: max(10px, 1.75vh) 20px;
+    height: clamp(44px, 9vh, 88px);
+    padding: 0 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -119,7 +120,8 @@ body {
 }
 
 .logo {
-    height: 6vh;
+    height: 62%;
+    width: auto;
     object-fit: contain;
 }
 
@@ -1141,7 +1143,7 @@ button:active {
 
 @media (max-width: 520px) {
     .top-bar {
-        padding: 1.5vh 10px;
+        padding: 0 10px;
         gap: 8px;
     }
 
@@ -1151,11 +1153,6 @@ button:active {
 
     .player-name {
         display: none;
-    }
-
-    .logo {
-        height: 3.5vh;
-        max-width: 18vw;
     }
 
     .bottom-bar {
@@ -1348,14 +1345,13 @@ button:active {
 
 /* Landscape phone — tighten both bars vertically */
 @media (max-height: 480px) {
-    .top-bar,
+    .top-bar {
+        height: 44px;
+    }
+
     .bottom-bar {
         padding-top: 6px;
         padding-bottom: 6px;
-    }
-
-    .logo {
-        height: max(20px, 3.5vh);
     }
 }
 
@@ -1614,7 +1610,7 @@ button:active {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #9E4A40;
+    background: #3E68A8;
     transform: translate(-50%, -50%);
     opacity: 0;
     animation: htp-pdot-p 2.5s ease-in-out infinite both;
