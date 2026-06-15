@@ -26,6 +26,9 @@ const SOCKET_PATH = location.hostname.endsWith('.discordsays.com') ? '/api/socke
 
 // ─── Audio ────────────────────────────────────────────────────────────────
 
+// Request ambient audio session so SFX mix with background music (iOS 16.4+)
+if (navigator.audioSession) navigator.audioSession.type = 'ambient';
+
 const sounds = {};
 ['Move', 'Jump', 'Wall', 'Win', 'Loss', 'Select'].forEach(name => {
     const a = new Audio(`audio/sfx/${name}.wav`);
