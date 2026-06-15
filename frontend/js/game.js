@@ -455,7 +455,7 @@ const DRAG_THRESHOLD = 12; // board-space px; below this a gesture is a tap, not
 canvas.addEventListener('click', e => {
     if (_suppressNextClick) { _suppressNextClick = false; return; }
     if (gameState.gameOver || !isMyTurn() || flipAnimating) return;
-    const { cellX, cellY, inHGap, inVGap } = clientToCell(e.clientX, e.clientY);
+    const { x, y, cellX, cellY, inHGap, inVGap } = clientToCell(e.clientX, e.clientY);
 
     if (!inHGap && !inVGap) {
         if (tapMode) {
@@ -464,10 +464,13 @@ canvas.addEventListener('click', e => {
             clearTapPreview();
             movePawn(cellY, cellX);
         }
-    } else if (tapMode) {
-        handleTapWall(cellY, cellX, inHGap ? 'H' : 'V');
     } else {
-        placeWall(cellY, cellX, inHGap ? 'H' : 'V');
+        const halfGap = GAP / 2;
+        const snap = v => Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((v - CELL_SIZE - halfGap) / STEP)));
+        const wallRow = inHGap ? cellY : snap(y);
+        const wallCol = inHGap ? snap(x) : cellX;
+        if (tapMode) handleTapWall(wallRow, wallCol, inHGap ? 'H' : 'V');
+        else         placeWall(wallRow, wallCol, inHGap ? 'H' : 'V');
     }
 });
 
@@ -498,14 +501,20 @@ function handleTapMove(row, col) {
     render();
 }
 
-function computeHoverState(cellX, cellY, inHGap, inVGap) {
+function computeHoverState(x, y, cellX, cellY, inHGap, inVGap) {
     const empty = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
     if (!isMyTurn() || gameState.gameOver) return empty;
     if (!inHGap && !inVGap) {
         const move = gameState.legalMoves.find(m => m.row === cellY && m.col === cellX);
         return { ...empty, moveRow: move?.row ?? null, moveCol: move?.col ?? null };
     }
-    return { ...empty, wallRow: cellY, wallCol: cellX, wallOrientation: inHGap ? 'H' : 'V' };
+    const halfGap = GAP / 2;
+    const snap = v => Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((v - CELL_SIZE - halfGap) / STEP)));
+    // H wall: row from gap row (cellY), col centered along x
+    // V wall: col from gap col (cellX), row centered along y
+    const wallRow = inHGap ? cellY : snap(y);
+    const wallCol = inHGap ? snap(x) : cellX;
+    return { ...empty, wallRow, wallCol, wallOrientation: inHGap ? 'H' : 'V' };
 }
 
 function isPointerHover() {
@@ -530,7 +539,7 @@ canvas.addEventListener('mousemove', e => {
     if (dragState?.isDragging && !dragState.fromTouch && !gameState.gameOver && isMyTurn()) {
         hoverState = nearestWallToPoint(x, y);
     } else {
-        hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
+        hoverState = computeHoverState(x, y, cellX, cellY, inHGap, inVGap);
     }
 
     canvas.style.cursor = isPointerHover() ? 'pointer' : 'default';
@@ -555,12 +564,14 @@ const EMPTY_HOVER = { wallRow: null, wallCol: null, wallOrientation: null, moveR
 function nearestWallToPoint(x, y) {
     const halfGap = GAP / 2;
     // Nearest H gap: horizontal wall between rows
+    // hCol uses centered snap: round to whichever 2-cell span center is nearest along x
     const hRow  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((y - CELL_SIZE - halfGap) / STEP)));
-    const hCol  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.floor(x / STEP)));
+    const hCol  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((x - CELL_SIZE - halfGap) / STEP)));
     const hDist = Math.abs(y - (hRow * STEP + CELL_SIZE + halfGap));
     // Nearest V gap: vertical wall between columns
+    // vRow uses centered snap: round to whichever 2-cell span center is nearest along y
     const vCol  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((x - CELL_SIZE - halfGap) / STEP)));
-    const vRow  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.floor(y / STEP)));
+    const vRow  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((y - CELL_SIZE - halfGap) / STEP)));
     const vDist = Math.abs(x - (vCol * STEP + CELL_SIZE + halfGap));
     return hDist <= vDist
         ? { wallRow: hRow, wallCol: hCol, wallOrientation: 'H', moveRow: null, moveCol: null }
