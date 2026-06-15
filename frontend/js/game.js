@@ -583,11 +583,11 @@ canvas.addEventListener('touchstart', e => {
     if (e.touches.length !== 1) { dragState = null; return; }
     const t = e.touches[0];
     const { x, y, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
-    dragState = { fromTouch: true, isDragging: false, startX: x, startY: y };
+    dragState = { fromTouch: true, isDragging: false, startX: x, startY: y, startedOnGap: inHGap || inVGap };
     // Always show snap preview immediately so the wall follows from first contact
     hoverState = nearestWallToPoint(x, y);
     render();
-    if (inHGap || inVGap) e.preventDefault(); // prevent scroll when starting on a gap
+    if (inHGap || inVGap) e.preventDefault(); // prevent scroll; also suppresses synthetic click
 }, { passive: false });
 
 canvas.addEventListener('touchmove', e => {
@@ -606,11 +606,19 @@ canvas.addEventListener('touchmove', e => {
 canvas.addEventListener('touchend', e => {
     if (!dragState?.fromTouch) { dragState = null; return; }
     const wasDragging = dragState.isDragging;
+    const startedOnGap = dragState.startedOnGap;
     dragState = null;
     if (!wasDragging) {
-        // Short tap — clear the ghost preview and let the synthetic click handle it
-        hoverState = EMPTY_HOVER;
-        render();
+        if (startedOnGap) {
+            // touchstart called preventDefault on a gap tap, suppressing the synthetic
+            // click — so commit the wall directly here instead
+            _suppressNextClick = true;
+            if (!commitWallAtHover()) { hoverState = EMPTY_HOVER; render(); }
+        } else {
+            // Cell tap: click will fire normally for pawn moves; clear wall ghost
+            hoverState = EMPTY_HOVER;
+            render();
+        }
         return;
     }
     _suppressNextClick = true;
