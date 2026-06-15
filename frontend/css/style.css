@@ -39,7 +39,7 @@ body {
 .top-bar {
     background: #13151F;
     border-bottom: 1px solid #1E2130;
-    padding: 1.75vh 20px;
+    padding: max(10px, 1.75vh) 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -80,20 +80,20 @@ body {
 
 .player-name {
     color: #8890A8;
-    font-size: 1.85vh;
+    font-size: max(12px, 1.85vh);
     font-weight: bold;
     white-space: nowrap;
 }
 
 .wall-boxes {
     display: flex;
-    gap: 0.4vh;
+    gap: max(3px, 0.4vh);
 }
 
 .wall-box {
-    width: 0.88vh;
-    height: 2.25vh;
-    border-radius: 0.25vh;
+    width: max(6px, 0.88vh);
+    height: max(14px, 2.25vh);
+    border-radius: max(2px, 0.25vh);
     flex-shrink: 0;
     transform-origin: center bottom;
 }
@@ -145,7 +145,7 @@ canvas {
 .bottom-bar {
     background: #13151F;
     border-top: 1px solid #1E2130;
-    padding: 1.75vh 20px;
+    padding: max(10px, 1.75vh) 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -156,7 +156,7 @@ canvas {
 
 .status-label {
     color: #C8CCDC;
-    font-size: 2vh;
+    font-size: max(14px, 2vh);
     font-weight: bold;
 }
 
@@ -175,8 +175,8 @@ canvas {
 }
 
 button {
-    padding: 1.25vh 22px;
-    font-size: 1.75vh;
+    padding: max(8px, 1.25vh) 22px;
+    font-size: max(13px, 1.75vh);
     border: 1px solid #2E3250;
     border-radius: 4px;
     cursor: pointer;
@@ -199,7 +199,7 @@ button:active {
 }
 
 .icon-btn {
-    padding: 0.65vh 9px;
+    padding: max(5px, 0.65vh) 9px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -207,8 +207,8 @@ button:active {
 
 .icon-btn svg {
     color: #8890A8;
-    width: 2vh;
-    height: 2vh;
+    width: max(16px, 2vh);
+    height: max(16px, 2vh);
 }
 
 .icon-btn:hover svg {
@@ -260,8 +260,8 @@ button:active {
 }
 
 .controls button svg {
-    width: 2vh;
-    height: 2vh;
+    width: max(16px, 2vh);
+    height: max(16px, 2vh);
     color: inherit;
     transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
 }
@@ -1350,11 +1350,11 @@ button:active {
 @media (max-height: 480px) {
     .top-bar,
     .bottom-bar {
-        padding-top: 0.5vh;
-        padding-bottom: 0.5vh;
+        padding-top: 6px;
+        padding-bottom: 6px;
     }
 
     .logo {
-        height: 3.5vh;
+        height: max(20px, 3.5vh);
     }
 }

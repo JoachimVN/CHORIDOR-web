@@ -634,7 +634,9 @@ canvas.addEventListener('touchend', e => {
     const t = e.changedTouches[0];
     const { x, y } = clientToCell(t.clientX, t.clientY);
     hoverState = nearestWallToPoint(x, y);
-    if (!commitWallAtHover()) { hoverState = EMPTY_HOVER; render(); }
+    commitWallAtHover();
+    hoverState = EMPTY_HOVER;
+    render();
 });
 
 canvas.addEventListener('touchcancel', () => {
