@@ -596,13 +596,19 @@ canvas.addEventListener('touchmove', e => {
     if (!dragState?.fromTouch) return;
     if (e.touches.length > 1) { dragState = null; return; }
     const t = e.touches[0];
-    const { x, y } = clientToCell(t.clientX, t.clientY);
+    const { x, y, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
+    const nowInGap = inHGap || inVGap;
     const dx = x - dragState.startX, dy = y - dragState.startY;
-    if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) dragState.isDragging = true;
+    const movedEnough = dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD;
+    // Only become a wall drag if the gesture started or entered a gap zone;
+    // finger tremor on a pawn move square must never trigger wall placement
+    if (movedEnough && (dragState.startedOnGap || nowInGap)) dragState.isDragging = true;
     if (dragState.isDragging) e.preventDefault();
-    // Always update preview — wall follows finger even before drag threshold
-    const next = nearestWallToPoint(x, y);
-    if (JSON.stringify(hoverState) !== JSON.stringify(next)) { hoverState = next; render(); }
+    // Update wall preview only when near a gap or actively dragging
+    if (dragState.startedOnGap || nowInGap || dragState.isDragging) {
+        const next = nearestWallToPoint(x, y);
+        if (JSON.stringify(hoverState) !== JSON.stringify(next)) { hoverState = next; render(); }
+    }
 }, { passive: false });
 
 canvas.addEventListener('touchend', e => {
