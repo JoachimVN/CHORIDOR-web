@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="frontend/images/logos/logo.png" alt="CHORIDOR"/>
+    <img src="docs/logos/Logo.png" alt="CHORIDOR"/>
 </p>
 
 <p align="center">
@@ -72,8 +72,9 @@ The desktop version ([JoachimVN/CHORIDOR](https://github.com/JoachimVN/CHORIDOR)
     <td valign="top">
       Online multiplayer<br>
       Discord Activity<br>
-      Spectator queue<br>
+      Tutorial<br>
       Animations<br>
+      Spectator queue<br>
       Plays in any browser, no install<br>
     </td>
   </tr>
