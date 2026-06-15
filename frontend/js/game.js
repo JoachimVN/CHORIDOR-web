@@ -1852,6 +1852,29 @@ document.getElementById('tap-confirm-no')?.addEventListener('click', e => {
     render();
 });
 
+document.addEventListener('keydown', e => {
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    if (!isMyTurn() || gameState.gameOver) return;
+    e.preventDefault();
+    if (tapMode) {
+        if (tapPreview) {
+            const { row, col, orientation } = tapPreview;
+            clearTapPreview();
+            placeWall(row, col, orientation, false);
+        } else if (tapMovePreview) {
+            const { row, col } = tapMovePreview;
+            clearTapPreview();
+            movePawn(row, col);
+        }
+    } else {
+        if (hoverState.wallRow !== null) {
+            placeWall(hoverState.wallRow, hoverState.wallCol, hoverState.wallOrientation);
+        } else if (hoverState.moveRow !== null) {
+            movePawn(hoverState.moveRow, hoverState.moveCol);
+        }
+    }
+});
+
 // ─── Init ─────────────────────────────────────────────────────────────────
 
 buildWallBoxes();
