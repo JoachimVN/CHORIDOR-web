@@ -1713,9 +1713,11 @@ button:active {
 .htp-pawn-bob { animation: htp-pawn-bob 1.8s ease-in-out infinite; }
 
 @keyframes htp-pawn-jump {
-    0%, 18%  { transform: translate(-50%, -50%); }
-    42%, 62% { transform: translate(-50%, calc(-50% - 62px)); }
-    80%, 100%{ transform: translate(-50%, -50%); }
+    0%, 18%  { transform: translate(-50%, -50%);              opacity: 1; }
+    42%, 58% { transform: translate(-50%, calc(-50% - 62px)); opacity: 1; }
+    70%      { transform: translate(-50%, calc(-50% - 62px)); opacity: 0; }
+    71%      { transform: translate(-50%, -50%);              opacity: 0; }
+    82%, 100%{ transform: translate(-50%, -50%);              opacity: 1; }
 }
 .htp-pawn-jump {
     animation: htp-pawn-jump 3s ease-in-out infinite;
