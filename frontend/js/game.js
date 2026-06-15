@@ -1711,6 +1711,7 @@ document.getElementById('legal-modal-close').addEventListener('click', closeLega
 document.getElementById('legal-modal-x').addEventListener('click', closeLegal);
 document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
+    if (!document.getElementById('htp-overlay').classList.contains('hidden')) { closeHTP(); return; }
     closeLegal();
     if (tapPreview || tapMovePreview) { clearTapPreview(); return; }
     if (hoverState.wallRow !== null || hoverState.moveRow !== null) {
@@ -1949,6 +1950,54 @@ setAnimEnabled(localStorage.getItem('choridor_anim') === '1', true);
         }
     }
 }
+
+// ===== How to Play =====
+const HTP_KEY = 'choridor_htp_seen';
+let _htpIdx = 0;
+const HTP_TOTAL = 4;
+
+function showHTP() {
+    document.getElementById('htp-overlay').classList.remove('hidden');
+    _htpGoto(0);
+}
+function closeHTP() {
+    localStorage.setItem(HTP_KEY, '1');
+    document.getElementById('htp-overlay').classList.add('hidden');
+    _htpIdx = 0;
+}
+function _htpGoto(idx) {
+    _htpIdx = Math.max(0, Math.min(HTP_TOTAL - 1, idx));
+    document.querySelectorAll('.htp-slide').forEach((s, i) => s.classList.toggle('active', i === _htpIdx));
+    document.querySelectorAll('.htp-dot').forEach((d, i) => d.classList.toggle('active', i === _htpIdx));
+    const prev = document.getElementById('htp-prev');
+    prev.classList.toggle('htp-hidden', _htpIdx === 0);
+    const next = document.getElementById('htp-next');
+    next.textContent = _htpIdx === HTP_TOTAL - 1 ? 'Got it!' : 'Next';
+}
+
+document.getElementById('htp-close').addEventListener('click', closeHTP);
+document.getElementById('htp-prev').addEventListener('click', () => _htpGoto(_htpIdx - 1));
+document.getElementById('htp-next').addEventListener('click', () => {
+    if (_htpIdx === HTP_TOTAL - 1) closeHTP(); else _htpGoto(_htpIdx + 1);
+});
+document.querySelectorAll('.htp-dot').forEach(d => d.addEventListener('click', () => _htpGoto(+d.dataset.idx)));
+document.getElementById('htp-btn').addEventListener('click', showHTP);
+document.getElementById('htp-lobby-btn').addEventListener('click', showHTP);
+
+// Swipe-to-navigate on the HTP card
+{
+    let _htpTouchX = null;
+    const htpCard = document.querySelector('.htp-card');
+    htpCard.addEventListener('touchstart', e => { _htpTouchX = e.touches[0].clientX; }, { passive: true });
+    htpCard.addEventListener('touchend', e => {
+        if (_htpTouchX === null) return;
+        const dx = e.changedTouches[0].clientX - _htpTouchX;
+        _htpTouchX = null;
+        if (Math.abs(dx) > 40) _htpGoto(_htpIdx + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+}
+
+if (!localStorage.getItem(HTP_KEY)) requestAnimationFrame(showHTP);
 
 requestAnimationFrame(() => {
     resizeCanvas();
