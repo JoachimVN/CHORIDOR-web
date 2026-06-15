@@ -592,8 +592,25 @@ canvas.addEventListener('touchstart', e => {
 
 canvas.addEventListener('touchmove', e => {
     if (!dragState?.fromTouch) return;
-    if (e.touches.length > 1) { dragState = null; return; }
+    if (e.touches.length > 1) {
+        // Multi-touch cancels the drag and clears any preview
+        dragState = null;
+        hoverState = EMPTY_HOVER;
+        render();
+        return;
+    }
     const t = e.touches[0];
+
+    // If the finger has left the board, hide the preview but keep the drag alive
+    // so it resumes naturally if the finger re-enters
+    const rect = canvas.getBoundingClientRect();
+    const inBounds = t.clientX >= rect.left && t.clientX <= rect.right &&
+                     t.clientY >= rect.top  && t.clientY <= rect.bottom;
+    if (!inBounds) {
+        if (hoverState.wallRow !== null) { hoverState = EMPTY_HOVER; render(); }
+        return;
+    }
+
     const { x, y, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
     const nowInGap = inHGap || inVGap;
     const dx = x - dragState.startX, dy = y - dragState.startY;
@@ -627,11 +644,16 @@ canvas.addEventListener('touchend', e => {
         }
         return;
     }
+    // If the finger lifted outside the board, cancel without placing
+    const t = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    const inBounds = t.clientX >= rect.left && t.clientX <= rect.right &&
+                     t.clientY >= rect.top  && t.clientY <= rect.bottom;
+    if (!inBounds) { hoverState = EMPTY_HOVER; render(); return; }
     // touchstart already called preventDefault on gap-origin drags, suppressing
     // click — only set _suppressNextClick for cell-origin drags where touchstart
     // did not preventDefault, so the flag doesn't bleed into the next pawn tap
     if (!startedOnGap) _suppressNextClick = true;
-    const t = e.changedTouches[0];
     const { x, y } = clientToCell(t.clientX, t.clientY);
     hoverState = nearestWallToPoint(x, y);
     commitWallAtHover();
@@ -1669,7 +1691,15 @@ if (urlRoom) {
 });
 document.getElementById('legal-modal-close').addEventListener('click', closeLegal);
 document.getElementById('legal-modal-x').addEventListener('click', closeLegal);
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLegal(); });
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    closeLegal();
+    if (tapPreview || tapMovePreview) { clearTapPreview(); return; }
+    if (hoverState.wallRow !== null || hoverState.moveRow !== null) {
+        hoverState = EMPTY_HOVER;
+        render();
+    }
+});
 
 // ─── Buttons ──────────────────────────────────────────────────────────────
 
