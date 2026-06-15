@@ -618,9 +618,9 @@ canvas.addEventListener('touchend', e => {
     dragState = null;
     if (!wasDragging) {
         if (startedOnGap) {
-            // touchstart called preventDefault on a gap tap, suppressing the synthetic
-            // click — so commit the wall directly here instead
-            _suppressNextClick = true;
+            // touchstart called preventDefault, which already suppresses the synthetic
+            // click — commit the wall here; do NOT set _suppressNextClick or it
+            // will bleed into the next tap and eat a pawn move
             if (!commitWallAtHover()) { hoverState = EMPTY_HOVER; render(); }
         } else {
             // Cell tap: click will fire normally for pawn moves; clear wall ghost
