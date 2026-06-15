@@ -465,12 +465,10 @@ canvas.addEventListener('click', e => {
             movePawn(cellY, cellX);
         }
     } else {
-        const halfGap = GAP / 2;
-        const snap = v => Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((v - CELL_SIZE - halfGap) / STEP)));
-        const wallRow = inHGap ? cellY : snap(y);
-        const wallCol = inHGap ? snap(x) : cellX;
-        if (tapMode) handleTapWall(wallRow, wallCol, inHGap ? 'H' : 'V');
-        else         placeWall(wallRow, wallCol, inHGap ? 'H' : 'V');
+        // Reuse computeHoverState so click always places exactly what hover shows
+        const { wallRow, wallCol, wallOrientation } = computeHoverState(x, y, cellX, cellY, inHGap, inVGap);
+        if (tapMode) handleTapWall(wallRow, wallCol, wallOrientation);
+        else         placeWall(wallRow, wallCol, wallOrientation);
     }
 });
 
@@ -510,11 +508,17 @@ function computeHoverState(x, y, cellX, cellY, inHGap, inVGap) {
     }
     const halfGap = GAP / 2;
     const snap = v => Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((v - CELL_SIZE - halfGap) / STEP)));
-    // H wall: row from gap row (cellY), col centered along x
-    // V wall: col from gap col (cellX), row centered along y
-    const wallRow = inHGap ? cellY : snap(y);
-    const wallCol = inHGap ? snap(x) : cellX;
-    return { ...empty, wallRow, wallCol, wallOrientation: inHGap ? 'H' : 'V' };
+    // At intersections use perpendicular depth: pick the gap the cursor is deeper inside
+    let useH = inHGap;
+    if (inHGap && inVGap) {
+        const hDist = Math.abs(y - (cellY * STEP + CELL_SIZE + halfGap));
+        const vDist = Math.abs(x - (cellX * STEP + CELL_SIZE + halfGap));
+        useH = hDist <= vDist;
+    }
+    return { ...empty,
+        wallRow: useH ? cellY   : snap(y),
+        wallCol: useH ? snap(x) : cellX,
+        wallOrientation: useH ? 'H' : 'V' };
 }
 
 function isPointerHover() {
@@ -573,7 +577,7 @@ function nearestWallToPoint(x, y) {
     const vCol  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((x - CELL_SIZE - halfGap) / STEP)));
     const vRow  = Math.max(0, Math.min(BOARD_SIZE - 2, Math.round((y - CELL_SIZE - halfGap) / STEP)));
     const vDist = Math.abs(x - (vCol * STEP + CELL_SIZE + halfGap));
-    return hDist <= vDist
+    return hDist < vDist
         ? { wallRow: hRow, wallCol: hCol, wallOrientation: 'H', moveRow: null, moveCol: null }
         : { wallRow: vRow, wallCol: vCol, wallOrientation: 'V', moveRow: null, moveCol: null };
 }
