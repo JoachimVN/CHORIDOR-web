@@ -1369,7 +1369,7 @@ button:active {
 .htp-logo-q {
     position: absolute;
     bottom: -6px;
-    right: -18px;
+    right: -26px;
     width: 24px;
     height: 24px;
     border-radius: 50%;
@@ -1563,19 +1563,38 @@ button:active {
     opacity: 0.5;
     transform: translate(-50%, -50%);
 }
-
-/* Gap highlight strip for slide 2 */
-.htp-gaphl {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 5px;
-    background: rgba(255,255,255,0.07);
-    animation: htp-gaphl-p 2s ease-in-out infinite;
+/* Dots fade out when the pawn starts jumping, back when it reappears */
+@keyframes htp-mdot-jump {
+    0%, 14%   { opacity: 0.5; }
+    24%, 72%  { opacity: 0; }
+    82%, 100% { opacity: 0.5; }
 }
-@keyframes htp-gaphl-p {
-    0%, 100% { background: rgba(255,255,255,0.05); }
-    50%       { background: rgba(255,255,255,0.14); }
+.htp-mdot-a { animation: htp-mdot-jump 3s ease-in-out infinite; }
+
+/* Gap highlight strips for slide 2 - H during red phase, V during blue phase */
+.htp-gaphl-h {
+    position: absolute;
+    left: 0; right: 0;
+    height: 5px;
+    background: rgba(255,255,255,0.12);
+    animation: htp-gaphl-phase1 8s ease-in-out infinite;
+}
+.htp-gaphl-v {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 5px;
+    background: rgba(255,255,255,0.12);
+    animation: htp-gaphl-phase2 8s ease-in-out infinite;
+}
+@keyframes htp-gaphl-phase1 {
+    0%, 8%    { opacity: 0; }
+    14%, 42%  { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+@keyframes htp-gaphl-phase2 {
+    0%, 58%   { opacity: 0; }
+    64%, 90%  { opacity: 1; }
+    98%, 100% { opacity: 0; }
 }
 
 /* Drag finger indicator */
@@ -1724,13 +1743,12 @@ button:active {
     z-index: 2;
 }
 
-/* Red H wall: first half of 8s cycle, grows width */
+/* Red H wall: grows in at start, stays visible through blue phase, fades at end */
 @keyframes htp-wall-seq {
-    0%, 18%  { width: 0; opacity: 0; }
-    26%      { opacity: 1; }
-    38%, 43% { width: 57px; opacity: 1; }
-    50%      { width: 57px; opacity: 0; }
-    51%, 100%{ width: 0; opacity: 0; }
+    0%, 18%   { width: 0; opacity: 0; }
+    26%       { opacity: 1; }
+    36%, 88%  { width: 57px; opacity: 1; }
+    97%, 100% { width: 57px; opacity: 0; }
 }
 .htp-wall-r { animation: htp-wall-seq 8s ease-in-out infinite; }
 
@@ -1771,8 +1789,12 @@ button:active {
 
 @media (prefers-reduced-motion: reduce) {
     .htp-pawn-bob, .htp-pawn-jump, .htp-arr-anim,
-    .htp-wall-r, .htp-wall-b, .htp-drag-anim, .htp-drag-v, .htp-gaphl { animation: none; }
+    .htp-wall-r, .htp-wall-b, .htp-drag-anim, .htp-drag-v,
+    .htp-gaphl-h, .htp-gaphl-v, .htp-mdot-a { animation: none; }
     .htp-wall-r { width: 57px; opacity: 1; }
     .htp-wall-b { height: 57px; opacity: 0; }
+    .htp-gaphl-h { opacity: 1; }
+    .htp-gaphl-v { opacity: 0; }
+    .htp-mdot-a { opacity: 0.5; }
     .htp-pdot { opacity: 0.6; }
 }
