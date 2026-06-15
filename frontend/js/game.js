@@ -508,6 +508,16 @@ function computeHoverState(cellX, cellY, inHGap, inVGap) {
     return { ...empty, wallRow: cellY, wallCol: cellX, wallOrientation: inHGap ? 'H' : 'V' };
 }
 
+function isPointerHover() {
+    if (hoverState.moveRow !== null) return true;
+    if (hoverState.wallRow === null) return false;
+    const cp = gameState.currentPlayer;
+    const hasWalls = cp === 'p1' ? gameState.wallCounts.p1 > 0 : gameState.wallCounts.p2 > 0;
+    const { wallRow: wr, wallCol: wc, wallOrientation: wo } = hoverState;
+    const wk = JSON.stringify({ row: wr, col: wc, orientation: wo });
+    return hasWalls && !gameState.walls.has(wk) && !hasWallOverlap(wr, wc, wo) && wallKeepsPathsOpen(wk);
+}
+
 canvas.addEventListener('mousemove', e => {
     const { x, y, cellX, cellY, inHGap, inVGap } = clientToCell(e.clientX, e.clientY);
 
@@ -523,19 +533,7 @@ canvas.addEventListener('mousemove', e => {
         hoverState = computeHoverState(cellX, cellY, inHGap, inVGap);
     }
 
-    let pointer = false;
-    if (hoverState.moveRow !== null) {
-        pointer = true;
-    } else if (hoverState.wallRow !== null) {
-        const cp = gameState.currentPlayer;
-        const hasWalls = cp === 'p1' ? gameState.wallCounts.p1 > 0 : gameState.wallCounts.p2 > 0;
-        const { wallRow: wr, wallCol: wc, wallOrientation: wo } = hoverState;
-        const wk = JSON.stringify({ row: wr, col: wc, orientation: wo });
-        if (hasWalls && !gameState.walls.has(wk) && !hasWallOverlap(wr, wc, wo)) {
-            pointer = wallKeepsPathsOpen(wk);
-        }
-    }
-    canvas.style.cursor = pointer ? 'pointer' : 'default';
+    canvas.style.cursor = isPointerHover() ? 'pointer' : 'default';
     if (JSON.stringify(hoverState) !== prev) render();
 });
 
@@ -1866,12 +1864,10 @@ document.addEventListener('keydown', e => {
             clearTapPreview();
             movePawn(row, col);
         }
-    } else {
-        if (hoverState.wallRow !== null) {
-            placeWall(hoverState.wallRow, hoverState.wallCol, hoverState.wallOrientation);
-        } else if (hoverState.moveRow !== null) {
-            movePawn(hoverState.moveRow, hoverState.moveCol);
-        }
+    } else if (hoverState.wallRow !== null) {
+        placeWall(hoverState.wallRow, hoverState.wallCol, hoverState.wallOrientation);
+    } else if (hoverState.moveRow !== null) {
+        movePawn(hoverState.moveRow, hoverState.moveCol);
     }
 });
 
