@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.8.1';
+const APP_VERSION = 'v1.8.2';
 document.querySelectorAll('.lobby-version').forEach(el => { el.textContent = APP_VERSION; });
 
 const BOARD_SIZE = 9;
@@ -584,10 +584,12 @@ canvas.addEventListener('touchstart', e => {
     const t = e.touches[0];
     const { x, y, inHGap, inVGap } = clientToCell(t.clientX, t.clientY);
     dragState = { fromTouch: true, isDragging: false, startX: x, startY: y, startedOnGap: inHGap || inVGap };
-    // Always show snap preview immediately so the wall follows from first contact
-    hoverState = nearestWallToPoint(x, y);
-    render();
-    if (inHGap || inVGap) e.preventDefault(); // prevent scroll; also suppresses synthetic click
+    if (inHGap || inVGap) {
+        // Show snap preview immediately on gap touches; prevents scroll and synthetic click
+        hoverState = nearestWallToPoint(x, y);
+        render();
+        e.preventDefault();
+    }
 }, { passive: false });
 
 canvas.addEventListener('touchmove', e => {
