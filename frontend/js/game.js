@@ -627,7 +627,10 @@ canvas.addEventListener('touchend', e => {
         }
         return;
     }
-    _suppressNextClick = true;
+    // touchstart already called preventDefault on gap-origin drags, suppressing
+    // click — only set _suppressNextClick for cell-origin drags where touchstart
+    // did not preventDefault, so the flag doesn't bleed into the next pawn tap
+    if (!startedOnGap) _suppressNextClick = true;
     const t = e.changedTouches[0];
     const { x, y } = clientToCell(t.clientX, t.clientY);
     hoverState = nearestWallToPoint(x, y);
