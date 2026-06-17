@@ -1490,7 +1490,8 @@ function updateRematchBtn(state) {
 
 function setPlayerAvatar(slot, url) {
     const img  = document.getElementById(`${slot}-avatar-img`);
-    if (!img || !url) return;
+    if (!img) return;
+    if (!url) { img.src = ''; img.classList.add('hidden'); return; }
     img.src = url;
     img.classList.remove('hidden');
 }
