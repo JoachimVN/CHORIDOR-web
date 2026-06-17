@@ -121,6 +121,7 @@ function completePromotion(room, io, code) {
         role:     slot,
         p1Name:   room.p1Name, p2Name:   room.p2Name,
         p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
+        code,
     });
 
     io.sockets.sockets.get(remainingId)?.emit('opponent-rejoined', { name: spectator.name, avatar: spectator.avatarUrl });
