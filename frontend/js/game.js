@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.8.2';
+const APP_VERSION = 'v1.9.0';
 document.querySelectorAll('.lobby-version').forEach(el => { el.textContent = APP_VERSION; });
 
 const BOARD_SIZE = 9;
@@ -1107,8 +1107,8 @@ function resetGame() {
     document.getElementById('discord-rejoin-bar').classList.add('hidden');
     document.getElementById('spectator-offer-bar').classList.add('hidden');
     document.getElementById('spectator-slot-bar').classList.add('hidden');
-    const _stepBtn = document.getElementById('btn-step-aside');
-    if (_stepBtn) { _stepBtn.textContent = 'Step aside'; _stepBtn.disabled = false; }
+    const stepBtn = document.getElementById('btn-step-aside');
+    if (stepBtn) { stepBtn.textContent = 'Step aside'; stepBtn.disabled = false; }
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
@@ -1265,7 +1265,7 @@ function initSocket(errorElId, callback) {
         opponentName   = role === 'p1' ? (p2Name || '') : (p1Name || '');
         opponentAvatar = role === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
         matchStartTime = Math.floor(Date.now() / 1000);
-        if (code) matchRoomCode = code;
+        if (code != null) matchRoomCode = code;
         document.getElementById('p1-name').textContent = p1Name || 'Player 1';
         document.getElementById('p2-name').textContent = p2Name || 'Player 2';
         setPlayerAvatar('p1', p1Avatar || '');

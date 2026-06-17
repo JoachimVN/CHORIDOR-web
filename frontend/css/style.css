@@ -1168,8 +1168,8 @@ button:active {
    2. height >=900px at 500-700px wide: catches 600x1200 and the 534-599px band
       where the ratio alone just misses; regular phones are all <900px tall or
       <500px wide */
-@media (max-aspect-ratio: 4/9) and (max-width: 600px),
-       (min-height: 900px) and (min-width: 500px) and (max-width: 700px) {
+@media ((max-aspect-ratio: 4/9) and (max-width: 600px)),
+       ((min-height: 900px) and (min-width: 500px) and (max-width: 700px)) {
     .wall-box {
         width: max(7px, 1.5vw);
     }
