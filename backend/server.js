@@ -394,17 +394,22 @@ io.on('connection', socket => {
         const room = rooms.get(code);
         if (!room?.pendingPromotion) return;
 
-        const { slot } = room.pendingPromotion;
+        const { slot, spectator } = room.pendingPromotion;
+        const isSpectatorDeclining = socket.id === spectator.socketId;
         cancelPromotion(room, io, code);
 
-        // If the slot was vacated by a disconnect, close the room
+        // If the slot was vacated by a disconnect, try the next queued spectator
         const slotEmpty = slot === 'p1' ? !room.p1 : !room.p2;
         if (slotEmpty) {
+            // Move the decliner to the back so the next spectator gets a chance
+            if (isSpectatorDeclining) {
+                const decliner = room.spectators.shift();
+                if (decliner) room.spectators.push(decliner);
+            }
             const remainingId = slot === 'p1' ? room.p2 : room.p1;
-            io.sockets.sockets.get(remainingId)?.emit('opponent-left');
-            if (room.instanceId) activityRooms.delete(room.instanceId);
-            rooms.delete(code);
-            console.log(`Room ${code} closed after spectator offer declined`);
+            if (!offerSpectatorPromotion(room, io, code, slot)) {
+                closeRoom(room, code, remainingId);
+            }
         }
     });
 
