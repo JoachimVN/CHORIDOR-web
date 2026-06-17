@@ -1107,6 +1107,8 @@ function resetGame() {
     document.getElementById('discord-rejoin-bar').classList.add('hidden');
     document.getElementById('spectator-offer-bar').classList.add('hidden');
     document.getElementById('spectator-slot-bar').classList.add('hidden');
+    const _stepBtn = document.getElementById('btn-step-aside');
+    if (_stepBtn) { _stepBtn.textContent = 'Step aside'; _stepBtn.disabled = false; }
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
