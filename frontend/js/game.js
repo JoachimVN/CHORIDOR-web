@@ -1288,6 +1288,7 @@ function initSocket(errorElId, callback) {
         if (opponentSteppingAside) showToast('Opponent is stepping aside');
         document.getElementById('spectator-offer-bar').classList.remove('hidden');
         document.getElementById('discord-rejoin-bar').classList.add('hidden');
+        document.getElementById('btn-step-aside').classList.add('hidden');
     });
 
     // Shown to the spectator when a slot opens up (no accept needed - they're pre-accepted)
