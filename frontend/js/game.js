@@ -1248,7 +1248,6 @@ function initSocket(errorElId, callback) {
     socket.on('spectator-count', count => {
         spectatorCount = count;
         updateSpectatorCountUI(count);
-        if (spectatorMode) updateSpectatorBanner(null);
         if (gameState.gameOver && onlineMode && !spectatorMode) {
             document.getElementById('btn-step-aside').classList.toggle('hidden', count === 0);
         }
