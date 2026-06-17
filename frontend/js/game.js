@@ -1181,6 +1181,7 @@ function initSocket(errorElId, callback) {
         // Keep onlineMode=true so New Game/Change Mode still route to the lobby
         opponentName   = '';
         opponentAvatar = '';
+        applyPlayerNames();
         if (isDiscord) {
             setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
             document.getElementById('discord-rejoin-bar').classList.remove('hidden');
@@ -1253,13 +1254,14 @@ function initSocket(errorElId, callback) {
         }
     });
 
-    socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar } = {}) => {
+    socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar, code } = {}) => {
         spectatorMode  = false;
         onlineRole     = role;
         onlineMode     = true;
         opponentName   = role === 'p1' ? (p2Name || '') : (p1Name || '');
         opponentAvatar = role === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
         matchStartTime = Math.floor(Date.now() / 1000);
+        if (code) matchRoomCode = code;
         document.getElementById('p1-name').textContent = p1Name || 'Player 1';
         document.getElementById('p2-name').textContent = p2Name || 'Player 2';
         setPlayerAvatar('p1', p1Avatar || '');
