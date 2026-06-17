@@ -125,6 +125,16 @@ function completePromotion(room, io, code) {
     });
 
     io.sockets.sockets.get(remainingId)?.emit('opponent-rejoined', { name: spectator.name, avatar: spectator.avatarUrl });
+
+    // Reset the board for spectators who are still watching (stepping-aside player already got spectate-start)
+    room.spectators.forEach(s => {
+        if (s.socketId === steppingAsideId) return;
+        io.sockets.sockets.get(s.socketId)?.emit('rematch-start', {
+            p1Name: room.p1Name, p2Name: room.p2Name,
+            p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
+        });
+    });
+
     io.to(code).emit('spectator-count', room.spectators.length);
     console.log(`Room ${code}: spectator promoted to ${slot}`);
 }
