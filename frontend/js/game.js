@@ -1254,6 +1254,10 @@ function initSocket(errorElId, callback) {
         }
     });
 
+    socket.on('queue-position', pos => {
+        if (spectatorMode) updateSpectatorBanner(pos);
+    });
+
     socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar, code } = {}) => {
         spectatorMode  = false;
         onlineRole     = role;
