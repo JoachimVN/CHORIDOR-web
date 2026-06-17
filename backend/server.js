@@ -135,6 +135,7 @@ function completePromotion(room, io, code) {
         });
     });
 
+    broadcastQueuePositions(room);
     io.to(code).emit('spectator-count', room.spectators.length);
     console.log(`Room ${code}: spectator promoted to ${slot}`);
 }
@@ -159,8 +160,15 @@ function closeRoom(room, code, notifySocketId) {
     console.log(`Room ${code} closed`);
 }
 
+function broadcastQueuePositions(room) {
+    room.spectators.forEach((s, idx) => {
+        io.sockets.sockets.get(s.socketId)?.emit('queue-position', idx + 1);
+    });
+}
+
 function removeSpectator(room, code, socketId) {
     room.spectators = room.spectators.filter(s => s.socketId !== socketId);
+    broadcastQueuePositions(room);
     io.to(code).emit('spectator-count', room.spectators.length);
 }
 
@@ -417,6 +425,7 @@ io.on('connection', socket => {
             if (isSpectatorDeclining) {
                 const decliner = room.spectators.shift();
                 if (decliner) room.spectators.push(decliner);
+                broadcastQueuePositions(room);
             }
             const remainingId = slot === 'p1' ? room.p2 : room.p1;
             if (!offerSpectatorPromotion(room, io, code, slot)) {
