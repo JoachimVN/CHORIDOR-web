@@ -1167,6 +1167,10 @@ button:active {
         gap: 6px;
     }
 
+    .htp-logo-q {
+        right: 0;
+    }
+
     .player-name {
         display: none;
     }
