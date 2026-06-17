@@ -1304,7 +1304,8 @@ function initSocket(errorElId, callback) {
         document.getElementById('spectator-offer-bar').classList.add('hidden');
         document.getElementById('spectator-slot-bar').classList.add('hidden');
         document.getElementById('spectator-slot-accept').classList.remove('hidden');
-        document.getElementById('btn-step-aside').classList.add('hidden');
+        document.getElementById('btn-step-aside').classList.toggle('hidden',
+            !onlineMode || spectatorMode || spectatorCount === 0 || !gameState.gameOver);
     });
 
     // Step-aside accepted by server, waiting for the other parties
