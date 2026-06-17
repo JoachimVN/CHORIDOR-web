@@ -52,7 +52,8 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .p2-section {
@@ -84,6 +85,9 @@ body {
     font-size: max(12px, 1.85vh);
     font-weight: bold;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .wall-boxes {
@@ -1370,7 +1374,7 @@ button:active {
     align-items: center;
     justify-content: center;
     min-width: 0;
-    flex-shrink: 2;
+    flex-shrink: 1;
 }
 .htp-logo-q {
     position: absolute;
