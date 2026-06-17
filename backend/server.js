@@ -95,6 +95,7 @@ function offerSpectatorPromotion(room, io, code, slot, steppingAsideId = null, s
 function completePromotion(room, io, code) {
     const { spectator, slot, remainingId, steppingAsideId, steppingAsideName, steppingAsideAvatar } = room.pendingPromotion;
     room.pendingPromotion = null;
+    room.rematchReady = null; // clear stale rematch state so the new player isn't auto-matched
     room.spectators = room.spectators.filter(s => s.socketId !== spectator.socketId);
 
     if (slot === 'p1') { room.p1 = spectator.socketId; room.p1Name = spectator.name; room.p1Avatar = spectator.avatarUrl; }
@@ -120,9 +121,21 @@ function completePromotion(room, io, code) {
         role:     slot,
         p1Name:   room.p1Name, p2Name:   room.p2Name,
         p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
+        code,
     });
 
     io.sockets.sockets.get(remainingId)?.emit('opponent-rejoined', { name: spectator.name, avatar: spectator.avatarUrl });
+
+    // Reset the board for spectators who are still watching (stepping-aside player already got spectate-start)
+    room.spectators.forEach(s => {
+        if (s.socketId === steppingAsideId) return;
+        io.sockets.sockets.get(s.socketId)?.emit('rematch-start', {
+            p1Name: room.p1Name, p2Name: room.p2Name,
+            p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
+        });
+    });
+
+    broadcastQueuePositions(room);
     io.to(code).emit('spectator-count', room.spectators.length);
     console.log(`Room ${code}: spectator promoted to ${slot}`);
 }
@@ -147,8 +160,15 @@ function closeRoom(room, code, notifySocketId) {
     console.log(`Room ${code} closed`);
 }
 
+function broadcastQueuePositions(room) {
+    room.spectators.forEach((s, idx) => {
+        io.sockets.sockets.get(s.socketId)?.emit('queue-position', idx + 1);
+    });
+}
+
 function removeSpectator(room, code, socketId) {
     room.spectators = room.spectators.filter(s => s.socketId !== socketId);
+    broadcastQueuePositions(room);
     io.to(code).emit('spectator-count', room.spectators.length);
 }
 
@@ -394,17 +414,23 @@ io.on('connection', socket => {
         const room = rooms.get(code);
         if (!room?.pendingPromotion) return;
 
-        const { slot } = room.pendingPromotion;
+        const { slot, spectator } = room.pendingPromotion;
+        const isSpectatorDeclining = socket.id === spectator.socketId;
         cancelPromotion(room, io, code);
 
-        // If the slot was vacated by a disconnect, close the room
+        // If the slot was vacated by a disconnect, try the next queued spectator
         const slotEmpty = slot === 'p1' ? !room.p1 : !room.p2;
         if (slotEmpty) {
+            // Move the decliner to the back so the next spectator gets a chance
+            if (isSpectatorDeclining) {
+                const decliner = room.spectators.shift();
+                if (decliner) room.spectators.push(decliner);
+                broadcastQueuePositions(room);
+            }
             const remainingId = slot === 'p1' ? room.p2 : room.p1;
-            io.sockets.sockets.get(remainingId)?.emit('opponent-left');
-            if (room.instanceId) activityRooms.delete(room.instanceId);
-            rooms.delete(code);
-            console.log(`Room ${code} closed after spectator offer declined`);
+            if (!offerSpectatorPromotion(room, io, code, slot)) {
+                closeRoom(room, code, remainingId);
+            }
         }
     });
 
