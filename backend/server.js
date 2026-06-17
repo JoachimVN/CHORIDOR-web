@@ -95,6 +95,7 @@ function offerSpectatorPromotion(room, io, code, slot, steppingAsideId = null, s
 function completePromotion(room, io, code) {
     const { spectator, slot, remainingId, steppingAsideId, steppingAsideName, steppingAsideAvatar } = room.pendingPromotion;
     room.pendingPromotion = null;
+    room.rematchReady = null; // clear stale rematch state so the new player isn't auto-matched
     room.spectators = room.spectators.filter(s => s.socketId !== spectator.socketId);
 
     if (slot === 'p1') { room.p1 = spectator.socketId; room.p1Name = spectator.name; room.p1Avatar = spectator.avatarUrl; }
