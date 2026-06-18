@@ -486,7 +486,7 @@ io.on('connection', socket => {
     socket.on('rejoin-room', ({ code, role, token } = {}) => {
         code = (code || '').trim().toUpperCase();
         const room = rooms.get(code);
-        if (!room?.reconnect || !room.reconnect.token || room.reconnect.slot !== role || room.reconnect.token !== token) {
+        if (!room?.reconnect?.token || room.reconnect.slot !== role || room.reconnect.token !== token) {
             socket.emit('rejoin-failed');
             return;
         }
