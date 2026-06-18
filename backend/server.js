@@ -292,7 +292,12 @@ io.on('connection', socket => {
         code = (code || '').trim().toUpperCase();
         const room = rooms.get(code);
         if (!room) { socket.emit('room-error', 'Room not found'); return; }
-        if (room.p1 && room.p2) {
+        // Already in this room (e.g. rejoin completed before manual join fires)
+        if (socket.data.roomCode === code) return;
+        // Treat a grace-period slot as occupied so the reconnecting player's spot is held
+        const effectivelyFull = (room.p1 || room.reconnect?.slot === 'p1') &&
+                                (room.p2 || room.reconnect?.slot === 'p2');
+        if (effectivelyFull) {
             // Room full - join as spectator
             const queuePos = room.spectators.push({ socketId: socket.id, name: name || '', avatarUrl: '' });
             socket.data.roomCode = code;
@@ -330,7 +335,9 @@ io.on('connection', socket => {
         const existingCode = activityRooms.get(instanceId);
         if (existingCode) {
             const room = rooms.get(existingCode);
-            if (room?.p1 && room?.p2) {
+            const activityFull = room && (room.p1 || room.reconnect?.slot === 'p1') &&
+                                         (room.p2 || room.reconnect?.slot === 'p2');
+            if (activityFull) {
                 const queuePos = room.spectators.push({ socketId: socket.id, name, avatarUrl });
                 socket.data.roomCode = existingCode;
                 socket.join(existingCode);
