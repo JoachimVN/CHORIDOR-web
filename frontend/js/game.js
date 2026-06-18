@@ -97,6 +97,29 @@ let myAvatar            = '';
 let rematchState           = 'idle'; // 'idle' | 'waiting' | 'incoming'
 let softLobby              = false;  // lobby open but game still alive behind it
 let softLobbyRestoreWin    = false;  // win overlay was showing when lobby opened
+let opponentReconnecting   = false;
+
+const SESSION_KEY = 'choridor_session';
+function storeSession(d)    { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(d)); } catch {} }
+function clearSession()     { try { sessionStorage.removeItem(SESSION_KEY); } catch {} }
+function getStoredSession() { try { const r = sessionStorage.getItem(SESSION_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
+
+let _reconnectCountdownId = null;
+function startReconnectCountdown(secs) {
+    clearReconnectCountdown();
+    let remaining = secs;
+    const tick = () => {
+        if (!opponentReconnecting) return;
+        const s = document.getElementById('status');
+        s.textContent = `Opponent reconnecting… ${remaining}s`;
+        s.className   = 'status-label';
+        if (remaining > 0) { remaining--; _reconnectCountdownId = setTimeout(tick, 1000); }
+    };
+    tick();
+}
+function clearReconnectCountdown() {
+    if (_reconnectCountdownId) { clearTimeout(_reconnectCountdownId); _reconnectCountdownId = null; }
+}
 
 const isDiscord       = location.hostname.endsWith('.discordsays.com');
 let discordInstanceId = null;
@@ -118,7 +141,7 @@ function setDiscordPresence(activity) {
 }
 
 function isMyTurn() {
-    if (spectatorMode) return false;
+    if (spectatorMode || opponentReconnecting) return false;
     return !onlineMode || gameState.currentPlayer === onlineRole;
 }
 
@@ -1050,6 +1073,7 @@ function populateWinStats() {
 function showWinScreen(winner, playerClass, delay = 0) {
     clearTapPreview();
     gameState.gameOver = true;   // lock input now; reveal the card after the move lands
+    if (onlineMode) clearSession();
     if (isDiscord && onlineMode) {
         setDiscordPresence({
             details: `vs. ${opponentName || 'Opponent'}`,
@@ -1153,6 +1177,71 @@ function initSocket(errorElId, callback) {
         socket = null;
     });
 
+    // Fires on every (re)connect after the initial one — attempt to rejoin a live room
+    socket.on('connect', () => {
+        const session = getStoredSession();
+        if (session && onlineMode && !spectatorMode) socket.emit('rejoin-room', session);
+    });
+
+    socket.on('disconnect', reason => {
+        if (reason === 'io client disconnect') clearSession();
+    });
+
+    socket.on('session-token', ({ token, role, code } = {}) => {
+        if (token && role && code) storeSession({ code, role, token });
+    });
+
+    socket.on('rejoin-success', ({ role, snapshot, p1Name, p2Name, p1Avatar, p2Avatar, code } = {}) => {
+        onlineRole           = role;
+        onlineMode           = true;
+        opponentReconnecting = false;
+        clearReconnectCountdown();
+        opponentName   = role === 'p1' ? (p2Name   || '') : (p1Name   || '');
+        opponentAvatar = role === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
+        matchRoomCode  = code || matchRoomCode;
+        gameState.flipped = role === 'p2';
+        applyPlayerNames();
+        if (snapshot) { applyGameSnapshot(snapshot); updateWallCounts(); }
+        updateStatus();
+        updateLegalMoves();
+        render();
+    });
+
+    socket.on('rejoin-failed', () => {
+        clearSession();
+        opponentReconnecting = false;
+        clearReconnectCountdown();
+        opponentName   = '';
+        opponentAvatar = '';
+        applyPlayerNames();
+        if (isDiscord) {
+            setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
+            document.getElementById('discord-rejoin-bar').classList.remove('hidden');
+        }
+        gameState.gameOver = true;
+        hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
+        clearTapPreview();
+        render();
+        const s = document.getElementById('status');
+        s.textContent = 'Opponent disconnected';
+        s.className   = 'status-label';
+    });
+
+    socket.on('opponent-reconnecting', ({ graceSecs } = {}) => {
+        opponentReconnecting = true;
+        clearTapPreview();
+        render();
+        startReconnectCountdown(graceSecs ?? 12);
+    });
+
+    socket.on('opponent-reconnected', () => {
+        opponentReconnecting = false;
+        clearReconnectCountdown();
+        updateStatus();
+        updateLegalMoves();
+        render();
+    });
+
     socket.on('room-created', ({ code }) => {
         onlineRole = 'p1';
         document.getElementById('room-code-display').textContent = code;
@@ -1178,6 +1267,9 @@ function initSocket(errorElId, callback) {
     socket.on('room-error', msg => showLobbyError(errorElId, msg));
 
     socket.on('opponent-left', () => {
+        clearSession();
+        opponentReconnecting = false;
+        clearReconnectCountdown();
         // Keep onlineMode=true so New Game/Change Mode still route to the lobby
         opponentName   = '';
         opponentAvatar = '';
@@ -1258,10 +1350,11 @@ function initSocket(errorElId, callback) {
         if (spectatorMode) updateSpectatorBanner(pos);
     });
 
-    socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar, code } = {}) => {
+    socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar, code, token } = {}) => {
         spectatorMode  = false;
         onlineRole     = role;
         onlineMode     = true;
+        if (token && code) storeSession({ code, role, token });
         opponentName   = role === 'p1' ? (p2Name || '') : (p1Name || '');
         opponentAvatar = role === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
         matchStartTime = Math.floor(Date.now() / 1000);
