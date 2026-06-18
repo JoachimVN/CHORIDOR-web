@@ -17,8 +17,10 @@ const P1_STRIP       = 'rgba(158, 74, 64, 0.7)';
 const P2_STRIP       = 'rgba(62, 104, 168, 0.7)';
 
 function getBackendUrl() {
-    if (['localhost', '127.0.0.1'].includes(location.hostname)) return 'http://localhost:3001';
-    if (location.hostname.endsWith('.discordsays.com')) return globalThis.location.origin;
+    const h = location.hostname;
+    if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:3001';
+    if (h.endsWith('.discordsays.com')) return globalThis.location.origin;
+    if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(h)) return `http://${h}:3001`;
     return 'https://choridor-web-production.up.railway.app';
 }
 const BACKEND_URL = getBackendUrl();
