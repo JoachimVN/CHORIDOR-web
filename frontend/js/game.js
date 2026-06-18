@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.9.2';
+const APP_VERSION = 'v1.9.3';
 document.querySelectorAll('.lobby-version').forEach(el => { el.textContent = APP_VERSION; });
 
 const BOARD_SIZE = 9;
