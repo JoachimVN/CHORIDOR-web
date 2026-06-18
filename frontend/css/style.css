@@ -1147,6 +1147,38 @@ button:active {
     }
 }
 
+/* Discord minimized pip (~320×180): strip card chrome, show only spinner + text */
+@media (max-height: 200px) {
+    .lobby-card {
+        background: transparent;
+        border-color: transparent;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 6px 16px;
+        width: 100%;
+        animation: none;
+    }
+
+    .lobby-logo,
+    .lobby-subtitle,
+    .lobby-htp-link,
+    .lobby-version {
+        display: none;
+    }
+
+    .discord-queue-status {
+        padding: 2px 0;
+    }
+
+    .discord-status-text {
+        font-size: 12px;
+    }
+
+    .discord-activity .app {
+        padding-top: 0;
+    }
+}
+
 /* Collapse text labels to icon-only before they can overflow the bottom bar */
 @media (max-width: 680px) {
     .controls button:not(.icon-btn) {
@@ -1405,13 +1437,13 @@ button:active {
     position: absolute;
     bottom: -6px;
     right: clamp(-28px, -2.5vh, -18px);
-    width: clamp(16px, 2.2vh, 24px);
-    height: clamp(16px, 2.2vh, 24px);
+    width: clamp(14px, 1.8vh, 20px);
+    height: clamp(14px, 1.8vh, 20px);
     border-radius: 50%;
     border: none;
     background: none;
     color: rgba(255,255,255,0.4);
-    font-size: clamp(11px, 1.5vh, 15px);
+    font-size: clamp(10px, 1.2vh, 13px);
     font-weight: 700;
     font-family: inherit;
     cursor: pointer;
