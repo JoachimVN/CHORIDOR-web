@@ -1165,17 +1165,20 @@ button:active {
    layout. Two overlapping conditions cover the problem range:
    1. ratio < 4/9 (height > ~2.25x width, <=600px wide): 500x1136, 522x1270...
       threshold sits safely above regular phones (390x844=0.462, 430x932=0.461)
-   2. height >=900px at 500-700px wide: catches 600x1200 and the 534-599px band
-      where the ratio alone just misses; regular phones are all <900px tall or
-      <500px wide */
+   2. height >=800px at 500-700px wide: catches 500x860 and above; regular phones
+      are all <500px wide so they never match the min-width:500px guard */
 @media ((max-aspect-ratio: 4/9) and (max-width: 600px)),
-       ((min-height: 900px) and (min-width: 500px) and (max-width: 700px)) {
+       ((min-height: 800px) and (min-width: 500px) and (max-width: 700px)) {
     .wall-box {
         width: max(7px, 1.5vw);
     }
 
     .wall-boxes {
         gap: max(3px, 0.8vw);
+    }
+
+    .logo {
+        max-height: clamp(22px, 5.5vh, 36px);
     }
 }
 
@@ -1187,6 +1190,10 @@ button:active {
 
     .player-section {
         gap: 6px;
+    }
+
+    .logo {
+        max-height: clamp(20px, 5.5vh, 28px);
     }
 
     .htp-logo-q {
