@@ -2079,10 +2079,11 @@ document.getElementById('htp-lobby-btn').addEventListener('click', showHTP);
 
 if (!localStorage.getItem(HTP_KEY)) requestAnimationFrame(showHTP);
 
-// Auto-rejoin on page load / refresh if a session is stored from a live game
+// Auto-rejoin on page load / refresh if a session is stored from a live game.
+// Skipped on Discord: the SDK re-initialises the socket via join-activity anyway.
 {
     const _pageSession = getStoredSession();
-    if (_pageSession) initSocket('', () => socket.emit('rejoin-room', _pageSession));
+    if (_pageSession && !isDiscord) initSocket('', () => socket.emit('rejoin-room', _pageSession));
 }
 
 requestAnimationFrame(() => {
