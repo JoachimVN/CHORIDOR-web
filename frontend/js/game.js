@@ -1140,6 +1140,46 @@ function resetGame() {
 
 // ─── Online: socket setup ─────────────────────────────────────────────────
 
+function handleOpponentDisconnected() {
+    clearSession();
+    opponentReconnecting = false;
+    clearReconnectCountdown();
+    opponentName   = '';
+    opponentAvatar = '';
+    applyPlayerNames();
+    if (isDiscord) {
+        setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
+        document.getElementById('discord-rejoin-bar').classList.remove('hidden');
+    }
+    gameState.gameOver = true;
+    hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
+    clearTapPreview();
+    render();
+    const s = document.getElementById('status');
+    s.textContent = 'Opponent disconnected';
+    s.className   = 'status-label';
+}
+
+function leaveSoftLobby() {
+    onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
+    spectatorMode = false;
+    socket?.disconnect(); socket = null;
+    softLobby = false; softLobbyRestoreWin = false;
+    resetGame();
+}
+
+function handleRematchClick() {
+    playSound('Select');
+    if (spectatorMode) return;
+    if (rematchState === 'idle' || rematchState === 'incoming') {
+        socket?.emit('rematch-request');
+        updateRematchBtn('waiting');
+    } else if (rematchState === 'waiting') {
+        socket?.emit('rematch-cancel');
+        updateRematchBtn('idle');
+    }
+}
+
 function initSocket(errorElId, callback) {
     if (socket?.connected) { callback(); return; }
     if (socket) { socket.disconnect(); socket = null; }
@@ -1212,25 +1252,7 @@ function initSocket(errorElId, callback) {
         render();
     });
 
-    socket.on('rejoin-failed', () => {
-        clearSession();
-        opponentReconnecting = false;
-        clearReconnectCountdown();
-        opponentName   = '';
-        opponentAvatar = '';
-        applyPlayerNames();
-        if (isDiscord) {
-            setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
-            document.getElementById('discord-rejoin-bar').classList.remove('hidden');
-        }
-        gameState.gameOver = true;
-        hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
-        clearTapPreview();
-        render();
-        const s = document.getElementById('status');
-        s.textContent = 'Opponent disconnected';
-        s.className   = 'status-label';
-    });
+    socket.on('rejoin-failed', () => { handleOpponentDisconnected(); });
 
     socket.on('opponent-reconnecting', ({ graceSecs } = {}) => {
         opponentReconnecting = true;
@@ -1271,26 +1293,8 @@ function initSocket(errorElId, callback) {
 
     socket.on('room-error', msg => showLobbyError(errorElId, msg));
 
-    socket.on('opponent-left', () => {
-        clearSession();
-        opponentReconnecting = false;
-        clearReconnectCountdown();
-        // Keep onlineMode=true so New Game/Change Mode still route to the lobby
-        opponentName   = '';
-        opponentAvatar = '';
-        applyPlayerNames();
-        if (isDiscord) {
-            setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
-            document.getElementById('discord-rejoin-bar').classList.remove('hidden');
-        }
-        gameState.gameOver = true;
-        hoverState = { wallRow: null, wallCol: null, wallOrientation: null, moveRow: null, moveCol: null };
-        clearTapPreview();
-        render();
-        const s = document.getElementById('status');
-        s.textContent = 'Opponent disconnected';
-        s.className   = 'status-label';
-    });
+    // Keep onlineMode=true so New Game/Change Mode still route to the lobby
+    socket.on('opponent-left', () => { handleOpponentDisconnected(); });
 
     socket.on('rematch-requested', () => {
         updateRematchBtn('incoming');
@@ -1652,13 +1656,7 @@ if (isDiscord) showLobbyView('lview-discord');
 
 document.getElementById('btn-local').addEventListener('click', () => {
     playSound('Select');
-    if (softLobby) {
-        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
-        spectatorMode = false;
-        socket?.disconnect(); socket = null;
-        softLobby = false; softLobbyRestoreWin = false;
-        resetGame();
-    }
+    if (softLobby) leaveSoftLobby();
     applyPlayerNames();
     hideLobby();
 });
@@ -1686,13 +1684,7 @@ document.getElementById('btn-lobby-back').addEventListener('click', () => {
 
 document.getElementById('btn-create').addEventListener('click', () => {
     playSound('Select');
-    if (softLobby) {
-        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
-        spectatorMode = false;
-        socket?.disconnect(); socket = null;
-        softLobby = false; softLobbyRestoreWin = false;
-        resetGame();
-    }
+    if (softLobby) leaveSoftLobby();
     setConnectingBtn('btn-create');
     initSocket('create-error', () => socket.emit('create-room', { name: getMyName() }));
 });
@@ -1724,28 +1716,8 @@ document.getElementById('win-card-close').addEventListener('click', () => {
     if (onlineMode && !spectatorMode) document.getElementById('win-footer').classList.remove('hidden');
 });
 
-document.getElementById('win-footer-rematch').addEventListener('click', () => {
-    playSound('Select');
-    if (spectatorMode) return;
-    if (rematchState === 'idle' || rematchState === 'incoming') {
-        socket?.emit('rematch-request');
-        updateRematchBtn('waiting');
-    } else if (rematchState === 'waiting') {
-        socket?.emit('rematch-cancel');
-        updateRematchBtn('idle');
-    }
-});
-
-document.getElementById('btn-rematch')?.addEventListener('click', () => {
-    playSound('Select');
-    if (rematchState === 'idle' || rematchState === 'incoming') {
-        socket?.emit('rematch-request');
-        updateRematchBtn('waiting');
-    } else if (rematchState === 'waiting') {
-        socket?.emit('rematch-cancel');
-        updateRematchBtn('idle');
-    }
-});
+document.getElementById('win-footer-rematch').addEventListener('click', handleRematchClick);
+document.getElementById('btn-rematch')?.addEventListener('click', handleRematchClick);
 
 function openSoftLobby(fromWin = false) {
     softLobby           = true;
@@ -1787,13 +1759,7 @@ document.getElementById('btn-join-confirm').addEventListener('click', () => {
     const code = document.getElementById('room-code-input').value.trim().toUpperCase();
     if (!code) return;
     playSound('Select');
-    if (softLobby) {
-        onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
-        spectatorMode = false;
-        socket?.disconnect(); socket = null;
-        softLobby = false; softLobbyRestoreWin = false;
-        resetGame();
-    }
+    if (softLobby) leaveSoftLobby();
     document.getElementById('join-error').classList.add('hidden');
     setConnectingBtn('btn-join-confirm');
     initSocket('join-error', () => socket.emit('join-room', { code, name: getMyName() }));
