@@ -20,7 +20,7 @@ function getBackendUrl() {
     const h = location.hostname;
     if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:3001';
     if (h.endsWith('.discordsays.com')) return globalThis.location.origin;
-    if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(h)) return `http://${h}:3001`;
+    if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(h)) return location.origin;
     return 'https://choridor-web-production.up.railway.app';
 }
 const BACKEND_URL = getBackendUrl();
