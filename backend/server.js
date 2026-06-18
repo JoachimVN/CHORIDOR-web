@@ -21,10 +21,18 @@ app.use(express.static(path.join(__dirname, '../frontend'), {
 }));
 
 // code -> { p1, p2, p1Name, p2Name, p1Avatar, p2Avatar, spectators, snapshot, rematchReady, instanceId,
+//           p1Token, p2Token,
+//           reconnect: null | { slot, token, timer, oldSocketId },
 //           pendingPromotion: null | { spectator, slot, accepted: Set, needed: [id,id], remainingId, steppingAsideId } }
 const rooms             = new Map();
 const pendingActivities = new Map(); // instanceId -> { socket, name, avatarUrl }
 const activityRooms     = new Map(); // instanceId -> code (for spectator lookup)
+
+const RECONNECT_GRACE_MS = 12_000;
+
+function makeToken() {
+    return Array.from({ length: 16 }, () => randomInt(16).toString(16)).join('');
+}
 
 function makeCode() {
     let code;
@@ -98,8 +106,9 @@ function completePromotion(room, io, code) {
     room.rematchReady = null; // clear stale rematch state so the new player isn't auto-matched
     room.spectators = room.spectators.filter(s => s.socketId !== spectator.socketId);
 
-    if (slot === 'p1') { room.p1 = spectator.socketId; room.p1Name = spectator.name; room.p1Avatar = spectator.avatarUrl; }
-    else               { room.p2 = spectator.socketId; room.p2Name = spectator.name; room.p2Avatar = spectator.avatarUrl; }
+    const newToken = makeToken();
+    if (slot === 'p1') { room.p1 = spectator.socketId; room.p1Name = spectator.name; room.p1Avatar = spectator.avatarUrl; room.p1Token = newToken; }
+    else               { room.p2 = spectator.socketId; room.p2Name = spectator.name; room.p2Avatar = spectator.avatarUrl; room.p2Token = newToken; }
     room.snapshot = makeSnapshot();
 
     if (steppingAsideId) {
@@ -122,6 +131,7 @@ function completePromotion(room, io, code) {
         p1Name:   room.p1Name, p2Name:   room.p2Name,
         p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
         code,
+        token:    newToken,
     });
 
     io.sockets.sockets.get(remainingId)?.emit('opponent-rejoined', { name: spectator.name, avatar: spectator.avatarUrl });
@@ -154,6 +164,7 @@ function cancelPromotion(room, io, code) {
 }
 
 function closeRoom(room, code, notifySocketId) {
+    if (room.reconnect) { clearTimeout(room.reconnect.timer); room.reconnect = null; }
     if (notifySocketId) io.sockets.sockets.get(notifySocketId)?.emit('opponent-left');
     if (room.instanceId) activityRooms.delete(room.instanceId);
     rooms.delete(code);
@@ -189,17 +200,44 @@ function handleSpectatorDisconnect(room, code, socketId) {
 }
 
 function handlePlayerDisconnect(room, code, socket, isP1) {
+    const slot        = isP1 ? 'p1' : 'p2';
     const remainingId = isP1 ? room.p2 : room.p1;
-    if (room.pendingPromotion) {
-        cancelPromotion(room, io, code);
-        closeRoom(room, code, remainingId);
+
+    // No active opponent to wait for — close immediately (e.g. p2 never joined)
+    if (!remainingId) {
+        if (room.pendingPromotion) cancelPromotion(room, io, code);
+        closeRoom(room, code, null);
         return;
     }
-    if (isP1) room.p1 = null; else room.p2 = null;
-    const slot = isP1 ? 'p1' : 'p2';
-    if (!offerSpectatorPromotion(room, io, code, slot)) {
-        closeRoom(room, code, remainingId);
+
+    // If a grace period is already running for the OTHER slot, both players are gone
+    if (room.reconnect && room.reconnect.slot !== slot) {
+        if (room.pendingPromotion) cancelPromotion(room, io, code);
+        clearTimeout(room.reconnect.timer);
+        room.reconnect = null;
+        closeRoom(room, code, null);
+        return;
     }
+
+    // Duplicate disconnect for the same slot — ignore
+    if (room.reconnect?.slot === slot) return;
+
+    if (room.pendingPromotion) cancelPromotion(room, io, code);
+
+    const token = isP1 ? room.p1Token : room.p2Token;
+    const timer  = setTimeout(() => {
+        room.reconnect = null;
+        if (isP1) room.p1 = null; else room.p2 = null;
+        const remId = isP1 ? room.p2 : room.p1;
+        if (!offerSpectatorPromotion(room, io, code, slot)) {
+            closeRoom(room, code, remId);
+        }
+    }, RECONNECT_GRACE_MS);
+
+    room.reconnect = { slot, token, timer, oldSocketId: socket.id };
+
+    io.sockets.sockets.get(remainingId)?.emit('opponent-reconnecting', { graceSecs: RECONNECT_GRACE_MS / 1000 });
+    console.log(`Room ${code}: ${slot} disconnected — grace period started`);
 }
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
@@ -243,7 +281,7 @@ io.on('connection', socket => {
 
     socket.on('create-room', ({ name } = {}) => {
         const code = makeCode();
-        rooms.set(code, { p1: socket.id, p2: null, p1Name: name || '', p1Avatar: '', spectators: [], snapshot: null, rematchReady: null, instanceId: null, pendingPromotion: null });
+        rooms.set(code, { p1: socket.id, p2: null, p1Name: name || '', p1Avatar: '', spectators: [], snapshot: null, rematchReady: null, instanceId: null, pendingPromotion: null, p1Token: null, p2Token: null, reconnect: null });
         socket.data.roomCode = code;
         socket.join(code);
         socket.emit('room-created', { code, role: 'p1' });
@@ -269,13 +307,17 @@ io.on('connection', socket => {
             io.to(code).emit('spectator-count', room.spectators.length);
             return;
         }
-        room.p2     = socket.id;
-        room.p2Name = name || '';
+        room.p2      = socket.id;
+        room.p2Name  = name || '';
         room.snapshot = makeSnapshot();
+        room.p1Token  = makeToken();
+        room.p2Token  = makeToken();
         socket.data.roomCode = code;
         socket.join(code);
         socket.emit('room-joined', { code, role: 'p2' });
         io.to(code).emit('game-start', { code, p1Name: room.p1Name, p2Name: room.p2Name, p1Avatar: '', p2Avatar: '' });
+        io.sockets.sockets.get(room.p1)?.emit('session-token', { token: room.p1Token, role: 'p1', code });
+        socket.emit('session-token', { token: room.p2Token, role: 'p2', code });
         console.log(`Room ${code}: ${room.p1} vs ${room.p2}`);
     });
 
@@ -316,18 +358,22 @@ io.on('connection', socket => {
         pendingActivities.delete(instanceId);
         const p1Socket = pending.socket;
         p1Socket.data.pendingInstanceId = null;
-        const code = makeCode();
+        const code     = makeCode();
         const snapshot = makeSnapshot();
-        rooms.set(code, { p1: p1Socket.id, p2: socket.id, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, spectators: [], snapshot, rematchReady: null, instanceId, pendingPromotion: null });
+        const p1Token  = makeToken();
+        const p2Token  = makeToken();
+        rooms.set(code, { p1: p1Socket.id, p2: socket.id, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, spectators: [], snapshot, rematchReady: null, instanceId, pendingPromotion: null, p1Token, p2Token, reconnect: null });
         activityRooms.set(instanceId, code);
-        p1Socket.data.roomCode          = code;
-        socket.data.roomCode            = code;
+        p1Socket.data.roomCode           = code;
+        socket.data.roomCode             = code;
         p1Socket.data.activityInstanceId = instanceId;
-        socket.data.activityInstanceId  = instanceId;
+        socket.data.activityInstanceId   = instanceId;
         p1Socket.join(code);
         socket.join(code);
         p1Socket.emit('game-start', { code, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, role: 'p1' });
         socket.emit('game-start',   { code, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, role: 'p2' });
+        p1Socket.emit('session-token', { token: p1Token, role: 'p1', code });
+        socket.emit('session-token',   { token: p2Token, role: 'p2', code });
         console.log(`Activity room ${code}: ${p1Socket.id} vs ${socket.id}`);
     });
 
@@ -361,7 +407,10 @@ io.on('connection', socket => {
         [room.p1,      room.p2     ] = [room.p2,      room.p1     ];
         [room.p1Name,  room.p2Name ] = [room.p2Name,  room.p1Name ];
         [room.p1Avatar,room.p2Avatar] = [room.p2Avatar,room.p1Avatar];
+        [room.p1Token, room.p2Token] = [room.p2Token, room.p1Token];
         io.to(code).emit('rematch-start', { p1Name: room.p1Name, p2Name: room.p2Name, p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '' });
+        io.sockets.sockets.get(room.p1)?.emit('session-token', { token: room.p1Token, role: 'p1', code });
+        io.sockets.sockets.get(room.p2)?.emit('session-token', { token: room.p2Token, role: 'p2', code });
     });
 
     socket.on('rematch-cancel', () => {
@@ -432,6 +481,42 @@ io.on('connection', socket => {
                 closeRoom(room, code, remainingId);
             }
         }
+    });
+
+    socket.on('rejoin-room', ({ code, role, token } = {}) => {
+        code = (code || '').trim().toUpperCase();
+        const room = rooms.get(code);
+        if (!room?.reconnect || room.reconnect.slot !== role || room.reconnect.token !== token) {
+            socket.emit('rejoin-failed');
+            return;
+        }
+
+        const { timer, oldSocketId } = room.reconnect;
+        clearTimeout(timer);
+        room.reconnect = null;
+
+        if (role === 'p1') room.p1 = socket.id;
+        else               room.p2 = socket.id;
+
+        // Keep rematchReady consistent if the rejoining player had voted for rematch
+        if (room.rematchReady === oldSocketId) room.rematchReady = socket.id;
+
+        socket.data.roomCode           = code;
+        socket.data.activityInstanceId = room.instanceId || null;
+        socket.join(code);
+
+        socket.emit('rejoin-success', {
+            role,
+            snapshot:  room.snapshot,
+            p1Name:    room.p1Name,         p2Name:   room.p2Name,
+            p1Avatar:  room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
+            code,
+        });
+
+        const remainingId = role === 'p1' ? room.p2 : room.p1;
+        if (remainingId) io.sockets.sockets.get(remainingId)?.emit('opponent-reconnected');
+
+        console.log(`Room ${code}: ${role} rejoined (was ${oldSocketId})`);
     });
 
     socket.on('move', data => {
