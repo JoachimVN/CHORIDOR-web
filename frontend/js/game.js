@@ -100,9 +100,9 @@ let softLobbyRestoreWin    = false;  // win overlay was showing when lobby opene
 let opponentReconnecting   = false;
 
 const SESSION_KEY = 'choridor_session';
-function storeSession(d)    { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(d)); } catch {} }
-function clearSession()     { try { sessionStorage.removeItem(SESSION_KEY); } catch {} }
-function getStoredSession() { try { const r = sessionStorage.getItem(SESSION_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
+function storeSession(d)    { try { localStorage.setItem(SESSION_KEY, JSON.stringify(d)); } catch {} }
+function clearSession()     { try { localStorage.removeItem(SESSION_KEY); } catch {} }
+function getStoredSession() { try { const r = localStorage.getItem(SESSION_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
 
 let _reconnectCountdownId = null;
 function startReconnectCountdown(secs) {
