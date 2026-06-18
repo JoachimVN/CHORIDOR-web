@@ -1184,7 +1184,12 @@ function initSocket(errorElId, callback) {
     });
 
     socket.on('disconnect', reason => {
-        if (reason === 'io client disconnect') clearSession();
+        if (reason === 'io client disconnect') { clearSession(); return; }
+        if (onlineMode && !spectatorMode) {
+            const s = document.getElementById('status');
+            s.textContent = 'Reconnecting…';
+            s.className   = 'status-label';
+        }
     });
 
     socket.on('session-token', ({ token, role, code } = {}) => {
