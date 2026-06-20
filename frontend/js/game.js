@@ -137,6 +137,7 @@ let vsAI       = false;
 let aiPlayer   = 'p2'; // which slot the AI occupies; swaps on Play Again
 let aiWorker   = null;
 let aiThinking = false;
+let fillerAI   = false; // a throwaway AI game played while still waiting for a real opponent
 
 function setDiscordPresence(activity) {
     if (!discordSdk) return;
@@ -1206,6 +1207,37 @@ function resetGame() {
     updateLegalMoves();
 }
 
+function setFillerWaitingLabel() {
+    const label = document.getElementById('filler-waiting-label');
+    if (!label) return;
+    if (isDiscord) { label.textContent = 'Finding opponent…'; return; }
+    const code = document.getElementById('room-code-display').textContent;
+    label.textContent = code ? `Waiting for a friend · ${code}` : 'Waiting for a friend';
+}
+
+// Start a throwaway AI game while the socket stays in the room / matchmaking queue.
+// Does not touch onlineMode/onlineRole/socket; game-start swaps in the real match.
+function startFillerAI() {
+    playSound('Select');
+    vsAI = true;
+    aiPlayer = 'p2';
+    fillerAI = true;
+    clearPlayerAvatars();
+    setFillerWaitingLabel();
+    document.getElementById('filler-waiting-bar').classList.remove('hidden');
+    hideLobby();
+    resetGame();
+}
+
+function stopFillerAI() {
+    if (!fillerAI) return;
+    fillerAI = false;
+    vsAI = false;
+    aiThinking = false;
+    if (aiWorker) { aiWorker.terminate(); aiWorker = null; }
+    document.getElementById('filler-waiting-bar').classList.add('hidden');
+}
+
 // ─── Online: socket setup ─────────────────────────────────────────────────
 
 function handleOpponentDisconnected() {
@@ -1367,6 +1399,9 @@ function initSocket(errorElId, callback) {
     socket.on('room-joined', () => { onlineRole = 'p2'; });
 
     socket.on('game-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, role, code } = {}) => {
+        if (fillerAI) { playSound('Select'); showToast('Opponent found!'); }
+        fillerAI = false;
+        document.getElementById('filler-waiting-bar').classList.add('hidden');
         vsAI = false; aiThinking = false;
         if (aiWorker) { aiWorker.terminate(); aiWorker = null; }
         if (role) onlineRole = role;
@@ -1418,6 +1453,7 @@ function initSocket(errorElId, callback) {
     });
 
     socket.on('spectate-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, snapshot, queuePosition, spectatorCount: sc, steppedAside } = {}) => {
+        stopFillerAI();
         spectatorMode  = true;
         onlineMode     = false;
         if (steppedAside) { onlineRole = null; opponentName = ''; opponentAvatar = ''; }
@@ -1451,6 +1487,7 @@ function initSocket(errorElId, callback) {
     });
 
     socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar, code, token } = {}) => {
+        stopFillerAI();
         spectatorMode  = false;
         onlineRole     = role;
         onlineMode     = true;
@@ -1813,6 +1850,17 @@ document.getElementById('btn-waiting-back').addEventListener('click', () => {
     spectatorMode = false;
     socket?.disconnect(); socket = null;
     showLobbyView('lview-mode');
+});
+
+document.getElementById('btn-waiting-ai').addEventListener('click', startFillerAI);
+document.getElementById('btn-discord-ai').addEventListener('click', startFillerAI);
+
+// Stop the filler game and return to the invite screen; stays in the room/queue.
+document.getElementById('filler-waiting-back').addEventListener('click', () => {
+    playSound('Select');
+    stopFillerAI();
+    document.getElementById('lobby-overlay').classList.remove('hidden');
+    showLobbyView(isDiscord ? 'lview-discord' : 'lview-waiting');
 });
 
 document.getElementById('btn-copy-link').addEventListener('click', () => {

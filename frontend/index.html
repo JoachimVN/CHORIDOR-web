@@ -106,6 +106,7 @@
                     </svg>
                     <span id="copy-btn-label">Copy Invite Link</span>
                 </button>
+                <button class="win-btn" id="btn-waiting-ai">Play AI while you wait</button>
                 <button class="lobby-back" id="btn-waiting-back">← Cancel</button>
             </div>
 
@@ -126,6 +127,7 @@
                     <span id="discord-status-text" class="discord-status-text">Connecting...</span>
                 </div>
                 <p class="lobby-subtitle">Invite a friend to play</p>
+                <button class="win-btn" id="btn-discord-ai">Play AI while you wait</button>
                 <p class="lobby-error hidden" id="discord-error"></p>
                 <div class="lobby-footer-icons discord-social-icons">
                     <a href="https://discord.gg/UFVqqfVw7x" target="_blank" rel="noopener" aria-label="Discord server" class="lobby-icon-link">
@@ -251,6 +253,12 @@
             <span class="win-footer-label">Your turn! Play vs <span id="spectator-slot-opponent"></span></span>
             <button id="spectator-slot-accept" class="win-footer-btn">Play</button>
             <button id="spectator-slot-decline" class="win-footer-btn win-footer-muted">Skip</button>
+        </div>
+
+        <!-- Shown while playing a filler AI game and still waiting for a real opponent -->
+        <div id="filler-waiting-bar" class="win-footer hidden">
+            <span class="win-footer-label" id="filler-waiting-label">Waiting for a friend</span>
+            <button id="filler-waiting-back" class="win-footer-btn win-footer-muted">Back to invite</button>
         </div>
 
         <div class="bottom-bar">
