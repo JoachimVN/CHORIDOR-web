@@ -1054,21 +1054,25 @@ function updateInMatchPresence(myTurn) {
     });
 }
 
+function updateStatusVsAI(status) {
+    const humanPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
+    if (aiThinking) {
+        status.textContent = 'AI is thinking…';
+        status.className   = `status-label ${aiPlayer}`;
+    } else if (gameState.currentPlayer === humanPlayer) {
+        const name = document.getElementById(`${humanPlayer}-name`).textContent;
+        status.textContent = `${name}'s Turn`;
+        status.className   = `status-label ${humanPlayer}`;
+    } else {
+        status.textContent = "AI's Turn";
+        status.className   = `status-label ${aiPlayer}`;
+    }
+}
+
 function updateStatus() {
     const status = document.getElementById('status');
     if (vsAI) {
-        const humanPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
-        if (aiThinking) {
-            status.textContent = 'AI is thinking…';
-            status.className   = `status-label ${aiPlayer}`;
-        } else if (gameState.currentPlayer === humanPlayer) {
-            const name = document.getElementById(`${humanPlayer}-name`).textContent;
-            status.textContent = `${name}'s Turn`;
-            status.className   = `status-label ${humanPlayer}`;
-        } else {
-            status.textContent = "AI's Turn";
-            status.className   = `status-label ${aiPlayer}`;
-        }
+        updateStatusVsAI(status);
         updateTapHint();
         return;
     }
@@ -1167,6 +1171,10 @@ function resetGame() {
     pawnAnims = [];
     wallAnims = [];
     aiThinking = false;
+    let nextFlipped;
+    if (onlineMode) nextFlipped = onlineRole === 'p2';
+    else if (vsAI) nextFlipped = aiPlayer === 'p1';
+    else nextFlipped = gameState.flipped;
     gameState = {
         p1Pawn:        { row: 8, col: 4 },
         p2Pawn:        { row: 0, col: 4 },
@@ -1175,7 +1183,7 @@ function resetGame() {
         wallCounts:    { p1: WALLS_PER_PLAYER, p2: WALLS_PER_PLAYER },
         currentPlayer: 'p1',
         legalMoves:    [],
-        flipped:       onlineMode ? onlineRole === 'p2' : (vsAI ? aiPlayer === 'p1' : gameState.flipped),
+        flipped:       nextFlipped,
         gameOver:      false,
         movesP1:       0,
         movesP2:       0,

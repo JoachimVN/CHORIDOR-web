@@ -15,13 +15,38 @@ function wk(row, col, o) { return `${o}${row},${col}`; }
 function hasWall(walls, o, row, col) { return walls.has(wk(row, col, o)); }
 
 function isEdgeBlocked(walls, from, to) {
-    const dr = to.row - from.row, dc = to.col - from.col;
+    const dc = to.col - from.col;
     if (dc === 0) {
         const er = Math.min(from.row, to.row);
         return hasWall(walls, 'H', er, from.col) || hasWall(walls, 'H', er, from.col - 1);
     }
     const ec = Math.min(from.col, to.col);
     return hasWall(walls, 'V', from.row, ec) || hasWall(walls, 'V', from.row - 1, ec);
+}
+
+function bfsEnqueue(visited, next, row, col) {
+    const idx = row * BOARD_SIZE + col;
+    if (!visited[idx]) { visited[idx] = 1; next.push({row, col}); }
+}
+
+// Handle jump-over-opponent in BFS; returns true if goalRow reached
+function bfsJumps(walls, visited, next, opp, dr, dc, goalRow) {
+    const sr = opp.row + dr, sc = opp.col + dc;
+    if (sr >= 0 && sr < BOARD_SIZE && sc >= 0 && sc < BOARD_SIZE &&
+        !isEdgeBlocked(walls, opp, {row: sr, col: sc})) {
+        if (sr === goalRow) return true;
+        bfsEnqueue(visited, next, sr, sc);
+        return false;
+    }
+    for (const [pd, qd] of DIRS) {
+        if ((pd === dr && qd === dc) || (pd === -dr && qd === -dc)) continue;
+        const r2 = opp.row + pd, c2 = opp.col + qd;
+        if (r2 < 0 || r2 >= BOARD_SIZE || c2 < 0 || c2 >= BOARD_SIZE) continue;
+        if (isEdgeBlocked(walls, opp, {row: r2, col: c2})) continue;
+        if (r2 === goalRow) return true;
+        bfsEnqueue(visited, next, r2, c2);
+    }
+    return false;
 }
 
 // BFS shortest path to goal row, respecting jump-over-opponent rule
@@ -43,25 +68,10 @@ function bfsDist(state, player) {
                 if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE) continue;
                 if (isEdgeBlocked(state.walls, cur, {row: nr, col: nc})) continue;
                 if (nr === opp.row && nc === opp.col) {
-                    // Jump over opponent
-                    const sr = nr + dr, sc = nc + dc;
-                    if (sr >= 0 && sr < BOARD_SIZE && sc >= 0 && sc < BOARD_SIZE &&
-                        !isEdgeBlocked(state.walls, {row: nr, col: nc}, {row: sr, col: sc})) {
-                        if (sr === goalRow) return dist;
-                        if (!visited[sr * BOARD_SIZE + sc]) { visited[sr * BOARD_SIZE + sc] = 1; next.push({row: sr, col: sc}); }
-                    } else {
-                        for (const [pd, qd] of DIRS) {
-                            if ((pd === dr && qd === dc) || (pd === -dr && qd === -dc)) continue;
-                            const dr2 = nr + pd, dc2 = nc + qd;
-                            if (dr2 < 0 || dr2 >= BOARD_SIZE || dc2 < 0 || dc2 >= BOARD_SIZE) continue;
-                            if (isEdgeBlocked(state.walls, {row: nr, col: nc}, {row: dr2, col: dc2})) continue;
-                            if (dr2 === goalRow) return dist;
-                            if (!visited[dr2 * BOARD_SIZE + dc2]) { visited[dr2 * BOARD_SIZE + dc2] = 1; next.push({row: dr2, col: dc2}); }
-                        }
-                    }
+                    if (bfsJumps(state.walls, visited, next, opp, dr, dc, goalRow)) return dist;
                 } else {
                     if (nr === goalRow) return dist;
-                    if (!visited[nr * BOARD_SIZE + nc]) { visited[nr * BOARD_SIZE + nc] = 1; next.push({row: nr, col: nc}); }
+                    bfsEnqueue(visited, next, nr, nc);
                 }
             }
         }
@@ -84,12 +94,30 @@ function hasPath(walls, start, goalRow) {
                 if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE) continue;
                 if (isEdgeBlocked(walls, cur, {row: nr, col: nc})) continue;
                 if (nr === goalRow) return true;
-                if (!visited[nr * BOARD_SIZE + nc]) { visited[nr * BOARD_SIZE + nc] = 1; next.push({row: nr, col: nc}); }
+                bfsEnqueue(visited, next, nr, nc);
             }
         }
         queue = next;
     }
     return false;
+}
+
+// Add jump-over-opponent moves to the moves array
+function pawnJumps(state, opp, dr, dc, moves) {
+    const sr = opp.row + dr, sc = opp.col + dc;
+    if (sr >= 0 && sr < BOARD_SIZE && sc >= 0 && sc < BOARD_SIZE &&
+        !isEdgeBlocked(state.walls, opp, {row: sr, col: sc})) {
+        moves.push({type: 'pawn', row: sr, col: sc});
+        return;
+    }
+    for (const [pd, qd] of DIRS) {
+        if ((pd === dr && qd === dc) || (pd === -dr && qd === -dc)) continue;
+        const r2 = opp.row + pd, c2 = opp.col + qd;
+        if (r2 < 0 || r2 >= BOARD_SIZE || c2 < 0 || c2 >= BOARD_SIZE) continue;
+        if (!isEdgeBlocked(state.walls, opp, {row: r2, col: c2})) {
+            moves.push({type: 'pawn', row: r2, col: c2});
+        }
+    }
 }
 
 function getPawnMoves(state) {
@@ -102,25 +130,24 @@ function getPawnMoves(state) {
         if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE) continue;
         if (isEdgeBlocked(state.walls, pos, {row: nr, col: nc})) continue;
         if (nr === opp.row && nc === opp.col) {
-            const sr = nr + dr, sc = nc + dc;
-            if (sr >= 0 && sr < BOARD_SIZE && sc >= 0 && sc < BOARD_SIZE &&
-                !isEdgeBlocked(state.walls, opp, {row: sr, col: sc})) {
-                moves.push({type: 'pawn', row: sr, col: sc});
-            } else {
-                for (const [pd, qd] of DIRS) {
-                    if ((pd === dr && qd === dc) || (pd === -dr && qd === -dc)) continue;
-                    const dr2 = nr + pd, dc2 = nc + qd;
-                    if (dr2 < 0 || dr2 >= BOARD_SIZE || dc2 < 0 || dc2 >= BOARD_SIZE) continue;
-                    if (!isEdgeBlocked(state.walls, opp, {row: dr2, col: dc2})) {
-                        moves.push({type: 'pawn', row: dr2, col: dc2});
-                    }
-                }
-            }
+            pawnJumps(state, opp, dr, dc, moves);
         } else {
             moves.push({type: 'pawn', row: nr, col: nc});
         }
     }
     return moves;
+}
+
+function wallConflicts(walls, o, r, c) {
+    if (o === 'H') return hasWall(walls,'H',r,c-1) || hasWall(walls,'H',r,c+1) || hasWall(walls,'V',r,c);
+    return hasWall(walls,'V',r-1,c) || hasWall(walls,'V',r+1,c) || hasWall(walls,'H',r,c);
+}
+
+function isValidWallPlacement(state, r, c, o) {
+    if (state.walls.has(wk(r, c, o)) || wallConflicts(state.walls, o, r, c)) return false;
+    const testWalls = new Set(state.walls);
+    testWalls.add(wk(r, c, o));
+    return hasPath(testWalls, state.p1, 0) && hasPath(testWalls, state.p2, BOARD_SIZE - 1);
 }
 
 function getWallMoves(state) {
@@ -131,15 +158,7 @@ function getWallMoves(state) {
     for (const o of ['H', 'V']) {
         for (let r = 0; r <= MAX; r++) {
             for (let c = 0; c <= MAX; c++) {
-                if (state.walls.has(wk(r, c, o))) continue;
-                if (o === 'H') {
-                    if (hasWall(state.walls,'H',r,c-1) || hasWall(state.walls,'H',r,c+1) || hasWall(state.walls,'V',r,c)) continue;
-                } else {
-                    if (hasWall(state.walls,'V',r-1,c) || hasWall(state.walls,'V',r+1,c) || hasWall(state.walls,'H',r,c)) continue;
-                }
-                const testWalls = new Set(state.walls);
-                testWalls.add(wk(r, c, o));
-                if (hasPath(testWalls, state.p1, 0) && hasPath(testWalls, state.p2, BOARD_SIZE - 1)) {
+                if (isValidWallPlacement(state, r, c, o)) {
                     moves.push({type: 'wall', row: r, col: c, orientation: o});
                 }
             }
@@ -203,23 +222,19 @@ function minimax(state, depth, alpha, beta, maximizing, deadline) {
     if (depth === 0 || Date.now() >= deadline) return s;
     const moves = candidates(state);
     moves.sort(rowProgressOrder(state));
-    if (maximizing) {
-        let max = -Infinity;
-        for (const m of moves) {
-            max = Math.max(max, minimax(applyMove(state, m), depth - 1, alpha, beta, false, deadline));
-            alpha = Math.max(alpha, max);
-            if (beta <= alpha) break;
+    let best = maximizing ? -Infinity : Infinity;
+    for (const m of moves) {
+        const v = minimax(applyMove(state, m), depth - 1, alpha, beta, !maximizing, deadline);
+        if (maximizing) {
+            if (v > best) best = v;
+            if (best > alpha) alpha = best;
+        } else {
+            if (v < best) best = v;
+            if (best < beta) beta = best;
         }
-        return max;
-    } else {
-        let min = Infinity;
-        for (const m of moves) {
-            min = Math.min(min, minimax(applyMove(state, m), depth - 1, alpha, beta, true, deadline));
-            beta = Math.min(beta, min);
-            if (beta <= alpha) break;
-        }
-        return min;
+        if (beta <= alpha) break;
     }
+    return best;
 }
 
 // Fast-path: if AI is winning the race, just advance the pawn
@@ -234,6 +249,12 @@ function racingMove(state, moves) {
         if (d < bestDist) { bestDist = d; best = m; }
     }
     return best;
+}
+
+function isBetterMove(s, myDist, oppDist, bestScore, bestMyDist, bestOppDist) {
+    if (s > bestScore) return true;
+    if (s === bestScore && myDist < bestMyDist) return true;
+    return s === bestScore && myDist === bestMyDist && oppDist > bestOppDist;
 }
 
 function decide(state) {
@@ -261,8 +282,7 @@ function decide(state) {
             const s = minimax(next, depth - 1, -Infinity, Infinity, false, deadline);
             const myDist  = bfsDist(next, AI);
             const oppDist = bfsDist(next, OPP);
-            if (s > bestScore || (s === bestScore && myDist < bestMyDist) ||
-                (s === bestScore && myDist === bestMyDist && oppDist > bestOppDist)) {
+            if (isBetterMove(s, myDist, oppDist, bestScore, bestMyDist, bestOppDist)) {
                 bestScore = s; bestMyDist = myDist; bestOppDist = oppDist; candidate = move;
             }
         }
@@ -271,12 +291,12 @@ function decide(state) {
     return best;
 }
 
-self.onmessage = function(e) {
+globalThis.onmessage = function(e) {
     const { state, aiPlayer } = e.data;
     AI  = aiPlayer || 'p2';
     OPP = AI === 'p1' ? 'p2' : 'p1';
     const walls = new Set(state.walls.map(w => wk(w.row, w.col, w.orientation)));
     const aiState = { p1: state.p1, p2: state.p2, walls, wc: state.wc, current: AI };
     const move = decide(aiState);
-    self.postMessage({ move });
+    globalThis.postMessage({ move });
 };
