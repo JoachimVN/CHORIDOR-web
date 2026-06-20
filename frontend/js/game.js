@@ -1290,6 +1290,7 @@ function initSocket(errorElId, callback) {
     });
 
     socket.on('rejoin-success', ({ role, snapshot, p1Name, p2Name, p1Avatar, p2Avatar, code } = {}) => {
+        spectatorMode        = false;
         onlineRole           = role;
         onlineMode           = true;
         opponentReconnecting = false;
