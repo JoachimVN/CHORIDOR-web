@@ -70,7 +70,6 @@ The desktop version ([JoachimVN/CHORIDOR](https://github.com/JoachimVN/CHORIDOR)
       Game review mode<br>
     </td>
     <td valign="top">
-      vs AI (minimax, alpha-beta pruning)<br>
       Online multiplayer<br>
       Discord Activity<br>
       Tutorial<br>

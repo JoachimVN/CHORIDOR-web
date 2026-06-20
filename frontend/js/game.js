@@ -1061,7 +1061,7 @@ function updateStatusVsAI(status) {
         status.className   = `status-label ${aiPlayer}`;
     } else if (gameState.currentPlayer === humanPlayer) {
         const name = document.getElementById(`${humanPlayer}-name`).textContent;
-        status.textContent = `${name}'s Turn`;
+        status.textContent = name === 'You' ? 'Your Turn' : `${name}'s Turn`;
         status.className   = `status-label ${humanPlayer}`;
     } else {
         status.textContent = "AI's Turn";
