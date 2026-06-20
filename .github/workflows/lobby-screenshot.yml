@@ -1,0 +1,40 @@
+name: Update lobby screenshot
+
+on:
+  push:
+    branches: [main]
+    paths: [frontend/**]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright and Chromium
+        run: npm install playwright && npx playwright install chromium --with-deps
+
+      - name: Serve frontend
+        run: npx serve frontend --listen 4321 &
+
+      - name: Wait for server
+        run: sleep 3
+
+      - name: Take lobby screenshot
+        run: node .github/scripts/lobby-screenshot.js
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/Lobby.png
+          git diff --cached --quiet || git commit -m "chore: update lobby screenshot [skip ci]"
+          git push
