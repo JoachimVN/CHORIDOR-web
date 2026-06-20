@@ -703,8 +703,8 @@ button:active {
     position: fixed;
     inset: 0;
     background:
-        radial-gradient(120% 90% at 50% 38%, rgba(20, 24, 38, 0.40) 0%, rgba(6, 7, 12, 0.70) 72%),
-        rgba(6, 7, 12, 0.66);
+        radial-gradient(120% 90% at 50% 38%, rgba(20, 24, 38, 0.46) 0%, rgba(6, 7, 12, 0.78) 72%),
+        rgba(6, 7, 12, 0.74);
     backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
@@ -966,6 +966,10 @@ button:active {
 }
 
 .lobby-icon-link:hover { color: #7880B0; }
+
+/* The website link only makes sense inside the Discord activity; on the web you are already here. */
+.lobby-website-link { display: none; }
+.discord-activity .lobby-website-link { display: flex; }
 
 .lobby-footer-meta {
     display: flex;
