@@ -2187,5 +2187,6 @@ requestAnimationFrame(() => {
 window.__choridor = {
     get gameState() { return gameState; },
     updateLegalMoves,
+    updateWallCounts,
     showWinScreen,
 };

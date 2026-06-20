@@ -26,6 +26,7 @@ async function injectState(p, pawns, wallCounts, extra) {
         gs.wallOwners = new Map(walls.map((w, i) => [JSON.stringify(w), i < 4 ? 'p1' : 'p2']));
         gs.wallCounts = wallCounts;
         Object.assign(gs, extra || {});
+        window.__choridor.updateWallCounts();
         window.__choridor.updateLegalMoves();
     }, { pawns, walls: WALLS, wallCounts, extra });
 }
@@ -62,7 +63,7 @@ async function win(b) {
     await injectState(p,
         { p1: { row: 0, col: 4 }, p2: { row: 4, col: 4 } },
         { p1: 6, p2: 6 },
-        { movesP1: 24, movesP2: 23 }
+        { movesP1: 36, movesP2: 35 }
     );
     await p.waitForTimeout(400);
     await p.evaluate(() => {
