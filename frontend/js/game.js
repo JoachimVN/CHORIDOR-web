@@ -2189,7 +2189,7 @@ requestAnimationFrame(() => {
 });
 
 // Screenshot automation bridge -- exposes module internals to injected scripts
-window.__choridor = {
+globalThis.__choridor = {
     get gameState() { return gameState; },
     updateLegalMoves,
     updateWallCounts,
