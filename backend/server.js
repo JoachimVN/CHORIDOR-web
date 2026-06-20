@@ -171,6 +171,74 @@ function closeRoom(room, code, notifySocketId) {
     console.log(`Room ${code} closed`);
 }
 
+// Start a fresh game between the first two live spectators; the rest keep watching.
+function recycleSpectatorsIntoGame(room, code, live) {
+    const [a, b] = live;
+    room.spectators = live.slice(2);
+    const p1Token = makeToken();
+    const p2Token = makeToken();
+    room.p1 = a.socketId; room.p1Name = a.name; room.p1Avatar = a.avatarUrl; room.p1Token = p1Token;
+    room.p2 = b.socketId; room.p2Name = b.name; room.p2Avatar = b.avatarUrl; room.p2Token = p2Token;
+    room.snapshot     = makeSnapshot();
+    room.rematchReady = null;
+
+    for (const [id, role, token] of [[a.socketId, 'p1', p1Token], [b.socketId, 'p2', p2Token]]) {
+        const sock = io.sockets.sockets.get(id);
+        if (!sock) continue;
+        sock.data.roomCode           = code;
+        sock.data.activityInstanceId = room.instanceId || null;
+        sock.emit('become-player', {
+            role,
+            p1Name: room.p1Name,         p2Name:   room.p2Name,
+            p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
+            code, token,
+        });
+    }
+
+    // Reset the boards of any spectators still watching.
+    room.spectators.forEach(s => {
+        io.sockets.sockets.get(s.socketId)?.emit('rematch-start', {
+            p1Name: room.p1Name, p2Name: room.p2Name,
+            p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
+        });
+    });
+    broadcastQueuePositions(room);
+    io.to(code).emit('spectator-count', room.spectators.length);
+    console.log(`Room ${code}: recycled into a fresh game between two spectators`);
+}
+
+// A lone spectator is left: drop the room and park them in the activity's
+// matchmaking queue so the next person to join the activity pairs with them.
+function parkSpectatorInQueue(room, code, spec) {
+    const instanceId = room.instanceId;
+    room.spectators = room.spectators.filter(s => s.socketId !== spec.socketId);
+    closeRoom(room, code, null); // deletes the room and the activityRooms mapping
+
+    const sock = io.sockets.sockets.get(spec.socketId);
+    if (!sock) return;
+    sock.leave(code);
+    sock.data.roomCode           = null;
+    sock.data.activityInstanceId = null;
+    sock.data.pendingInstanceId  = instanceId;
+    pendingActivities.set(instanceId, { socket: sock, name: spec.name, avatarUrl: spec.avatarUrl });
+    sock.emit('activity-waiting');
+    console.log(`Room ${code}: lone spectator parked back in matchmaking`);
+}
+
+// The last player has left. Keep the activity alive for any spectators rather
+// than deleting it out from under them; only close when nobody is left.
+function recycleOrClose(room, code, notifySocketId) {
+    if (room.reconnect) { clearTimeout(room.reconnect.timer); room.reconnect = null; }
+    room.pendingPromotion = null;
+
+    if (room.instanceId) {
+        const live = room.spectators.filter(s => io.sockets.sockets.get(s.socketId));
+        if (live.length >= 2) { recycleSpectatorsIntoGame(room, code, live); return; }
+        if (live.length === 1) { parkSpectatorInQueue(room, code, live[0]); return; }
+    }
+    closeRoom(room, code, notifySocketId);
+}
+
 function broadcastQueuePositions(room) {
     room.spectators.forEach((s, idx) => {
         io.sockets.sockets.get(s.socketId)?.emit('queue-position', idx + 1);
@@ -203,10 +271,10 @@ function handlePlayerDisconnect(room, code, socket, isP1) {
     const slot        = isP1 ? 'p1' : 'p2';
     const remainingId = isP1 ? room.p2 : room.p1;
 
-    // No active opponent to wait for — close immediately (e.g. p2 never joined)
+    // No active opponent to wait for — recycle for spectators or close (e.g. p2 never joined)
     if (!remainingId) {
         if (room.pendingPromotion) cancelPromotion(room, io, code);
-        closeRoom(room, code, null);
+        recycleOrClose(room, code, null);
         return;
     }
 
@@ -215,7 +283,7 @@ function handlePlayerDisconnect(room, code, socket, isP1) {
         if (room.pendingPromotion) cancelPromotion(room, io, code);
         clearTimeout(room.reconnect.timer);
         room.reconnect = null;
-        closeRoom(room, code, null);
+        recycleOrClose(room, code, null);
         return;
     }
 

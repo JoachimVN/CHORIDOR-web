@@ -1513,6 +1513,27 @@ function initSocket(errorElId, callback) {
         render();
     });
 
+    // First player in a fresh activity, or a lone spectator whose game emptied out:
+    // drop any game/spectator state and wait for an opponent in matchmaking.
+    socket.on('activity-waiting', () => {
+        stopFillerAI();
+        clearSession();
+        spectatorMode = false;
+        onlineMode    = false;
+        onlineRole    = null;
+        discordRejoinPending = false;
+        document.getElementById('win-overlay').classList.add('hidden');
+        document.getElementById('win-footer').classList.add('hidden');
+        document.getElementById('discord-rejoin-bar').classList.add('hidden');
+        updateSpectatorBanner(0);
+        updateSpectatorCountUI(0);
+        setDiscordPresence({ state: 'Finding a match...', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' }, party: { size: [1, 2] } });
+        const statusText = document.getElementById('discord-status-text');
+        if (statusText) statusText.textContent = 'Finding opponent...';
+        document.getElementById('lobby-overlay').classList.remove('hidden');
+        showLobbyView('lview-discord');
+    });
+
     // Shown to a player when offered to play with a queued spectator
     socket.on('spectator-offer', ({ name, avatarUrl, opponentSteppingAside } = {}) => {
         // Grace period is over: stop the "Opponent reconnecting..." countdown so it
