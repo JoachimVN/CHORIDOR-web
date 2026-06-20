@@ -1865,6 +1865,17 @@ document.getElementById('spectator-offer-decline').addEventListener('click', spe
 document.getElementById('spectator-slot-accept')  .addEventListener('click', spectatorBarBtn('spectator-slot-bar',  'accept-spectator'));
 document.getElementById('spectator-slot-decline') .addEventListener('click', spectatorBarBtn('spectator-slot-bar',  'decline-spectator'));
 
+// External links inside the Discord activity must go through the SDK; a plain
+// target="_blank" is blocked in the sandboxed iframe.
+document.querySelectorAll('#lview-discord .lobby-icon-link').forEach(a => {
+    a.addEventListener('click', e => {
+        if (isDiscord && discordSdk) {
+            e.preventDefault();
+            discordSdk.commands.openExternalLink({ url: a.href });
+        }
+    });
+});
+
 document.getElementById('discord-find-match-btn').addEventListener('click', () => {
     playSound('Select');
     document.getElementById('discord-rejoin-bar').classList.add('hidden');
