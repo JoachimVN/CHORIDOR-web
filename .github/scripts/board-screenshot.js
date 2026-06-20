@@ -3,32 +3,61 @@ const { chromium } = require('playwright');
 const BASE = 'http://localhost:4321';
 const OUT  = 'docs/screenshots';
 
-// Mid-game state: ~22 moves in, 4 walls placed each, pawns well advanced
-const WALLS = [
-    // p1's walls (indices 0-3)
-    { row: 6, col: 3, orientation: 'H' },
-    { row: 6, col: 5, orientation: 'H' },
-    { row: 5, col: 1, orientation: 'V' },
-    { row: 4, col: 7, orientation: 'H' },
-    // p2's walls (indices 4-7)
-    { row: 3, col: 3, orientation: 'H' },
-    { row: 3, col: 5, orientation: 'H' },
-    { row: 2, col: 1, orientation: 'V' },
-    { row: 1, col: 6, orientation: 'V' },
-];
+// P1 (red) starts at row 8, races to row 0.
+// P2 (blue) starts at row 0, races to row 8.
+// Orange walls = P1's (slow P2's southward advance).
+// Blue walls   = P2's (slow P1's northward advance).
 
-async function injectState(p, pawns, wallCounts, extra) {
-    await p.evaluate(({ pawns, walls, wallCounts, extra }) => {
-        const gs = window.__choridor.gameState;
-        gs.p1Pawn     = pawns.p1;
-        gs.p2Pawn     = pawns.p2;
-        gs.walls      = new Set(walls.map(w => JSON.stringify(w)));
-        gs.wallOwners = new Map(walls.map((w, i) => [JSON.stringify(w), i < 4 ? 'p1' : 'p2']));
+const BOARD = {
+    p1Pawn:     { row: 5, col: 3 },
+    p2Pawn:     { row: 3, col: 3 },
+    p1Walls: [
+        { row: 3, col: 1, orientation: 'V' }, // seals P2's left escape at rows 3-4
+        { row: 5, col: 4, orientation: 'H' }, // preemptive block at P2's future row 5-6
+        { row: 3, col: 4, orientation: 'V' }, // middle of Z shape (red)
+    ],
+    p2Walls: [
+        { row: 2, col: 3, orientation: 'H' }, // horizontal barrier blocking P1 at rows 2-3
+        { row: 4, col: 5, orientation: 'H' }, // blocks P1 from going up via cols 4-5
+        { row: 4, col: 2, orientation: 'V' }, // vertical wall right of both pawns, bottom at row 5 edge
+    ],
+    wallCounts: { p1: 7, p2: 7 },
+};
+
+// Win: continuation of BOARD state. P1 pushed through to row 0 for the win.
+const WIN = {
+    p1Pawn:     { row: 0, col: 3 },
+    p2Pawn:     { row: 5, col: 4 },
+    p1Walls: [
+        { row: 3, col: 1, orientation: 'V' },
+        { row: 5, col: 4, orientation: 'H' },
+        { row: 3, col: 4, orientation: 'V' },
+        { row: 6, col: 3, orientation: 'H' },
+    ],
+    p2Walls: [
+        { row: 2, col: 3, orientation: 'H' },
+        { row: 4, col: 5, orientation: 'H' },
+        { row: 4, col: 2, orientation: 'V' },
+        { row: 1, col: 2, orientation: 'H' },
+    ],
+    wallCounts: { p1: 6, p2: 6 },
+    extra: { movesP1: 16, movesP2: 15 },
+};
+
+async function injectState(p, state) {
+    const allWalls = [...state.p1Walls, ...state.p2Walls];
+    const numP1    = state.p1Walls.length;
+    await p.evaluate(({ p1Pawn, p2Pawn, allWalls, numP1, wallCounts, extra }) => {
+        const gs      = window.__choridor.gameState;
+        gs.p1Pawn     = p1Pawn;
+        gs.p2Pawn     = p2Pawn;
+        gs.walls      = new Set(allWalls.map(w => JSON.stringify(w)));
+        gs.wallOwners = new Map(allWalls.map((w, i) => [JSON.stringify(w), i < numP1 ? 'p1' : 'p2']));
         gs.wallCounts = wallCounts;
         Object.assign(gs, extra || {});
         window.__choridor.updateWallCounts();
         window.__choridor.updateLegalMoves();
-    }, { pawns, walls: WALLS, wallCounts, extra });
+    }, { p1Pawn: state.p1Pawn, p2Pawn: state.p2Pawn, allWalls, numP1, wallCounts: state.wallCounts, extra: state.extra });
 }
 
 async function board(b) {
@@ -39,12 +68,7 @@ async function board(b) {
     await p.waitForTimeout(1500);
     await p.click('#btn-local');
     await p.waitForTimeout(800);
-    // p1 at row 2 (almost there), p2 at row 5; each used 4 walls leaving 6
-    await injectState(p,
-        { p1: { row: 2, col: 4 }, p2: { row: 5, col: 4 } },
-        { p1: 6, p2: 6 },
-        null
-    );
+    await injectState(p, BOARD);
     await p.waitForTimeout(400);
     await p.screenshot({ path: `${OUT}/Board.png` });
     await p.close();
@@ -59,12 +83,7 @@ async function win(b) {
     await p.waitForTimeout(1500);
     await p.click('#btn-local');
     await p.waitForTimeout(800);
-    // p1 crossed the finish line; p2 still at row 4
-    await injectState(p,
-        { p1: { row: 0, col: 4 }, p2: { row: 4, col: 4 } },
-        { p1: 6, p2: 6 },
-        { movesP1: 36, movesP2: 35 }
-    );
+    await injectState(p, WIN);
     await p.waitForTimeout(400);
     await p.evaluate(() => {
         document.getElementById('p1-name').textContent = 'Player 1';
