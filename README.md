@@ -60,8 +60,8 @@ The desktop version ([JoachimVN/CHORIDOR](https://github.com/JoachimVN/CHORIDOR)
 
 <table>
   <tr>
-    <th align="center" width="33%">Desktop only</th>
-    <th align="center" width="33%">Web only</th>
+    <th align="center" width="33%">Desktop</th>
+    <th align="center" width="33%">Web</th>
   </tr>
   <tr>
     <td valign="top">
@@ -71,6 +71,7 @@ The desktop version ([JoachimVN/CHORIDOR](https://github.com/JoachimVN/CHORIDOR)
       Game review mode<br>
     </td>
     <td valign="top">
+      1 AI strategy<br>
       Online multiplayer<br>
       Discord Activity<br>
       Tutorial<br>
