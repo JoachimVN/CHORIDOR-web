@@ -703,8 +703,8 @@ button:active {
     position: fixed;
     inset: 0;
     background:
-        radial-gradient(120% 90% at 50% 38%, rgba(20, 24, 38, 0.46) 0%, rgba(6, 7, 12, 0.78) 72%),
-        rgba(6, 7, 12, 0.74);
+        radial-gradient(120% 90% at 50% 38%, rgba(20, 24, 38, 0.42) 0%, rgba(6, 7, 12, 0.73) 72%),
+        rgba(6, 7, 12, 0.68);
     backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
@@ -1005,7 +1005,11 @@ button:active {
     transition: color 0.15s;
 }
 
-.lobby-ai-link:hover { color: rgba(255, 255, 255, 0.7); }
+.lobby-ai-link:hover {
+    color: rgba(255, 255, 255, 0.7);
+    background: none;
+    border-color: transparent;
+}
 
 /* Discord activity waiting UI */
 .discord-queue-status {
@@ -1465,22 +1469,24 @@ button:active {
 /* Lobby how-to-play link */
 .lobby-htp-link {
     display: block;
-    width: 100%;
-    text-align: center;
+    margin-top: 6px;
     border: none;
     background: none;
-    color: rgba(255,255,255,0.4);
-    font-size: 13px;
+    color: rgba(255, 255, 255, 0.32);
     font-family: inherit;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.08em;
     cursor: pointer;
-    padding: 6px 0 2px;
-    text-decoration: underline;
-    text-decoration-color: rgba(255,255,255,0.15);
-    text-underline-offset: 3px;
+    padding: 8px 14px;
+    border-radius: 8px;
     transition: color 0.15s;
-    margin-top: 4px;
 }
-.lobby-htp-link:hover { color: rgba(255,255,255,0.65); }
+.lobby-htp-link:hover {
+    color: rgba(255, 255, 255, 0.7);
+    background: none;
+    border-color: transparent;
+}
 
 /* ===== How to Play Modal ===== */
 .htp-overlay {
