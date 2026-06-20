@@ -14,6 +14,8 @@ function wk(row, col, o) { return `${o}${row},${col}`; }
 
 function hasWall(walls, o, row, col) { return walls.has(wk(row, col, o)); }
 
+function inBounds(r, c) { return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE; }
+
 function isEdgeBlocked(walls, from, to) {
     const dc = to.col - from.col;
     if (dc === 0) {
@@ -49,6 +51,21 @@ function bfsJumps(walls, visited, next, opp, dr, dc, goalRow) {
     return false;
 }
 
+// Process one BFS cell; returns true if goalRow is reached
+function bfsStep(state, visited, next, cur, opp, goalRow) {
+    for (const [dr, dc] of DIRS) {
+        const nr = cur.row + dr, nc = cur.col + dc;
+        if (!inBounds(nr, nc) || isEdgeBlocked(state.walls, cur, {row: nr, col: nc})) continue;
+        if (nr === opp.row && nc === opp.col) {
+            if (bfsJumps(state.walls, visited, next, opp, dr, dc, goalRow)) return true;
+        } else {
+            if (nr === goalRow) return true;
+            bfsEnqueue(visited, next, nr, nc);
+        }
+    }
+    return false;
+}
+
 // BFS shortest path to goal row, respecting jump-over-opponent rule
 function bfsDist(state, player) {
     const pos = player === 'p1' ? state.p1 : state.p2;
@@ -63,21 +80,21 @@ function bfsDist(state, player) {
         dist++;
         const next = [];
         for (const cur of queue) {
-            for (const [dr, dc] of DIRS) {
-                const nr = cur.row + dr, nc = cur.col + dc;
-                if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE) continue;
-                if (isEdgeBlocked(state.walls, cur, {row: nr, col: nc})) continue;
-                if (nr === opp.row && nc === opp.col) {
-                    if (bfsJumps(state.walls, visited, next, opp, dr, dc, goalRow)) return dist;
-                } else {
-                    if (nr === goalRow) return dist;
-                    bfsEnqueue(visited, next, nr, nc);
-                }
-            }
+            if (bfsStep(state, visited, next, cur, opp, goalRow)) return dist;
         }
         queue = next;
     }
     return Infinity;
+}
+
+function hasPathStep(walls, visited, next, cur, goalRow) {
+    for (const [dr, dc] of DIRS) {
+        const nr = cur.row + dr, nc = cur.col + dc;
+        if (!inBounds(nr, nc) || isEdgeBlocked(walls, cur, {row: nr, col: nc})) continue;
+        if (nr === goalRow) return true;
+        bfsEnqueue(visited, next, nr, nc);
+    }
+    return false;
 }
 
 // Simple BFS (no jumps) for wall legality check — faster, position-independent
@@ -89,13 +106,7 @@ function hasPath(walls, start, goalRow) {
     while (queue.length > 0) {
         const next = [];
         for (const cur of queue) {
-            for (const [dr, dc] of DIRS) {
-                const nr = cur.row + dr, nc = cur.col + dc;
-                if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE) continue;
-                if (isEdgeBlocked(walls, cur, {row: nr, col: nc})) continue;
-                if (nr === goalRow) return true;
-                bfsEnqueue(visited, next, nr, nc);
-            }
+            if (hasPathStep(walls, visited, next, cur, goalRow)) return true;
         }
         queue = next;
     }
@@ -216,6 +227,17 @@ function rowProgressOrder(state) {
     };
 }
 
+function updateAlphaBeta(maximizing, v, best, alpha, beta) {
+    if (maximizing) {
+        if (v > best) best = v;
+        if (best > alpha) alpha = best;
+    } else {
+        if (v < best) best = v;
+        if (best < beta) beta = best;
+    }
+    return [best, alpha, beta];
+}
+
 function minimax(state, depth, alpha, beta, maximizing, deadline) {
     const s = evaluate(state);
     if (Math.abs(s) >= WIN) return s > 0 ? s + depth : s - depth;
@@ -225,13 +247,7 @@ function minimax(state, depth, alpha, beta, maximizing, deadline) {
     let best = maximizing ? -Infinity : Infinity;
     for (const m of moves) {
         const v = minimax(applyMove(state, m), depth - 1, alpha, beta, !maximizing, deadline);
-        if (maximizing) {
-            if (v > best) best = v;
-            if (best > alpha) alpha = best;
-        } else {
-            if (v < best) best = v;
-            if (best < beta) beta = best;
-        }
+        [best, alpha, beta] = updateAlphaBeta(maximizing, v, best, alpha, beta);
         if (beta <= alpha) break;
     }
     return best;
