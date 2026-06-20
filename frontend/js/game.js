@@ -1142,7 +1142,7 @@ function showWinScreen(winner, playerClass, delay = 0) {
     document.getElementById('win-card').className  = `win-card ${playerClass}`;
     document.getElementById('win-pawn').className  = `win-pawn ${playerClass}`;
     const msg = document.getElementById('win-message');
-    msg.textContent = `${winner} Wins!`;
+    msg.textContent = winner === 'You' ? 'You win!' : `${winner} wins!`;
     msg.className   = `win-title ${playerClass}`;
 
     document.getElementById('play-again-btn').classList.toggle('hidden', onlineMode || spectatorMode);
@@ -1704,6 +1704,11 @@ function applyPlayerNames() {
             setPlayerAvatar('p1', opponentAvatar);
             setPlayerAvatar('p2', myAvatar);
         }
+    } else if (vsAI) {
+        const humanPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
+        document.getElementById('p1-name').textContent = humanPlayer === 'p1' ? (name || 'You') : 'AI';
+        document.getElementById('p2-name').textContent = humanPlayer === 'p2' ? (name || 'You') : 'AI';
+        clearPlayerAvatars();
     } else {
         document.getElementById('p1-name').textContent = name || 'Player 1';
         document.getElementById('p2-name').textContent = 'Player 2';
