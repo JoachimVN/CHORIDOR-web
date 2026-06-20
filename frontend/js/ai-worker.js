@@ -220,8 +220,8 @@ function evaluate(state) {
 function rowProgressOrder(state) {
     const goalRow = state.current === 'p1' ? 0 : BOARD_SIZE - 1;
     return (a, b) => {
-        const ap = a.type === 'pawn', bp = b.type === 'pawn';
-        if (ap !== bp) return ap ? -1 : 1;
+        const ap = a.type === 'pawn';
+        if (ap !== (b.type === 'pawn')) return ap ? -1 : 1;
         if (!ap) return 0;
         return Math.abs(a.row - goalRow) - Math.abs(b.row - goalRow);
     };

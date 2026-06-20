@@ -1229,6 +1229,7 @@ function handleOpponentDisconnected() {
 
 function leaveSoftLobby() {
     vsAI = false; aiThinking = false;
+    if (aiWorker) { aiWorker.terminate(); aiWorker = null; }
     onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
     spectatorMode = false;
     socket?.disconnect(); socket = null;
@@ -1354,6 +1355,7 @@ function initSocket(errorElId, callback) {
 
     socket.on('game-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, role, code } = {}) => {
         vsAI = false; aiThinking = false;
+        if (aiWorker) { aiWorker.terminate(); aiWorker = null; }
         if (role) onlineRole = role;
         opponentName   = onlineRole === 'p1' ? (p2Name   || '') : (p1Name   || '');
         opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
