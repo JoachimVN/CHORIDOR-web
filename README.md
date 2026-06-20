@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-    <strong>A web implementation of Quoridor with local, online, and Discord multiplayer.</strong>
+    <strong>A web implementation of Quoridor with local, online, Discord multiplayer, and a computer opponent.</strong>
 </p>
 
 <p align="center">
@@ -47,6 +47,7 @@ The desktop version is available at [JoachimVN/CHORIDOR](https://github.com/Joac
 - Pawn moves with jump logic, wall placement with path-check enforcement
 - **Local multiplayer** — two players on the same device
 - **Online multiplayer** — create a room, share a 3-character code, play with a friend anywhere
+- **vs AI** — play against a minimax computer opponent (alpha-beta pruning, Web Worker)
 - **Discord Activity** — play directly inside a Discord voice channel with Rich Presence
 - **Spectating queue** — players can watch an ongoing game and are promoted automatically when a player leaves
 - Dark-slate themed board with legal-move dot indicators and hover-preview for walls
@@ -64,12 +65,12 @@ The desktop version ([JoachimVN/CHORIDOR](https://github.com/JoachimVN/CHORIDOR)
   </tr>
   <tr>
     <td valign="top">
-      Human vs AI opponents<br>
       AI vs AI simulation<br>
       Live AI tournament with mini-boards<br>
       Game review mode<br>
     </td>
     <td valign="top">
+      vs AI (minimax, alpha-beta pruning)<br>
       Online multiplayer<br>
       Discord Activity<br>
       Tutorial<br>
