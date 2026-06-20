@@ -5,6 +5,10 @@ const TIME_LIMIT_MS = 1500;
 const WALL_RESERVE_WEIGHT = 1;
 const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
 
+// Set per-request in onmessage; safe because the worker is single-threaded
+let AI  = 'p2';
+let OPP = 'p1';
+
 // Compact wall key: "H3,4" or "V3,4"
 function wk(row, col, o) { return `${o}${row},${col}`; }
 
@@ -167,14 +171,14 @@ function applyMove(state, move) {
     return next;
 }
 
-// AI is always p2: positive score favours p2 (maximizing player)
+// Positive score favours the AI player
 function heuristic(state, myDist, oppDist) {
-    return (oppDist - myDist) + WALL_RESERVE_WEIGHT * (state.wc['p2'] - state.wc['p1']);
+    return (oppDist - myDist) + WALL_RESERVE_WEIGHT * (state.wc[AI] - state.wc[OPP]);
 }
 
 function evaluate(state) {
-    const myDist  = bfsDist(state, 'p2');
-    const oppDist = bfsDist(state, 'p1');
+    const myDist  = bfsDist(state, AI);
+    const oppDist = bfsDist(state, OPP);
     if (myDist  === 0)        return  WIN;
     if (oppDist === 0)        return -WIN;
     if (myDist  === Infinity) return -WIN;
@@ -220,13 +224,13 @@ function minimax(state, depth, alpha, beta, maximizing, deadline) {
 
 // Fast-path: if AI is winning the race, just advance the pawn
 function racingMove(state, moves) {
-    const myDist  = bfsDist(state, 'p2');
-    const oppDist = bfsDist(state, 'p1');
+    const myDist  = bfsDist(state, AI);
+    const oppDist = bfsDist(state, OPP);
     if (myDist <= 0 || myDist >= oppDist) return null;
     let best = null, bestDist = myDist;
     for (const m of moves) {
         if (m.type !== 'pawn') continue;
-        const d = bfsDist(applyMove(state, m), 'p2');
+        const d = bfsDist(applyMove(state, m), AI);
         if (d < bestDist) { bestDist = d; best = m; }
     }
     return best;
@@ -244,7 +248,7 @@ function decide(state) {
     moves.sort((a, b) => {
         if (a.type !== b.type) return a.type === 'pawn' ? -1 : 1;
         if (a.type !== 'pawn') return 0;
-        return bfsDist(applyMove(state, a), 'p2') - bfsDist(applyMove(state, b), 'p2');
+        return bfsDist(applyMove(state, a), AI) - bfsDist(applyMove(state, b), AI);
     });
 
     let best = moves[0];
@@ -255,8 +259,8 @@ function decide(state) {
             if (Date.now() >= deadline) break;
             const next = applyMove(state, move);
             const s = minimax(next, depth - 1, -Infinity, Infinity, false, deadline);
-            const myDist  = bfsDist(next, 'p2');
-            const oppDist = bfsDist(next, 'p1');
+            const myDist  = bfsDist(next, AI);
+            const oppDist = bfsDist(next, OPP);
             if (s > bestScore || (s === bestScore && myDist < bestMyDist) ||
                 (s === bestScore && myDist === bestMyDist && oppDist > bestOppDist)) {
                 bestScore = s; bestMyDist = myDist; bestOppDist = oppDist; candidate = move;
@@ -268,9 +272,11 @@ function decide(state) {
 }
 
 self.onmessage = function(e) {
-    const { state } = e.data;
+    const { state, aiPlayer } = e.data;
+    AI  = aiPlayer || 'p2';
+    OPP = AI === 'p1' ? 'p2' : 'p1';
     const walls = new Set(state.walls.map(w => wk(w.row, w.col, w.orientation)));
-    const aiState = { p1: state.p1, p2: state.p2, walls, wc: state.wc, current: 'p2' };
+    const aiState = { p1: state.p1, p2: state.p2, walls, wc: state.wc, current: AI };
     const move = decide(aiState);
     self.postMessage({ move });
 };

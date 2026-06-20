@@ -133,6 +133,7 @@ let spectatorMode  = false;
 let spectatorCount = 0;
 
 let vsAI       = false;
+let aiPlayer   = 'p2'; // which slot the AI occupies; swaps on Play Again
 let aiWorker   = null;
 let aiThinking = false;
 
@@ -146,7 +147,7 @@ function setDiscordPresence(activity) {
 
 function isMyTurn() {
     if (spectatorMode || opponentReconnecting) return false;
-    if (vsAI && (gameState.currentPlayer !== 'p1' || aiThinking)) return false;
+    if (vsAI && (gameState.currentPlayer === aiPlayer || aiThinking)) return false;
     return !onlineMode || gameState.currentPlayer === onlineRole;
 }
 
@@ -980,7 +981,7 @@ function hasPathToGoal(start, goalRow) {
 // ─── AI ───────────────────────────────────────────────────────────────────
 
 function triggerAI() {
-    if (!vsAI || gameState.gameOver || gameState.currentPlayer !== 'p2') return;
+    if (!vsAI || gameState.gameOver || gameState.currentPlayer !== aiPlayer) return;
     if (!aiWorker) {
         aiWorker = new Worker('js/ai-worker.js');
         aiWorker.onmessage = function(e) {
@@ -996,6 +997,7 @@ function triggerAI() {
     updateLegalMoves();
     const walls = [...gameState.walls].map(k => JSON.parse(k));
     aiWorker.postMessage({
+        aiPlayer,
         state: {
             p1: { ...gameState.p1Pawn },
             p2: { ...gameState.p2Pawn },
@@ -1055,16 +1057,17 @@ function updateInMatchPresence(myTurn) {
 function updateStatus() {
     const status = document.getElementById('status');
     if (vsAI) {
+        const humanPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
         if (aiThinking) {
             status.textContent = 'AI is thinking…';
-            status.className   = 'status-label p2';
-        } else if (gameState.currentPlayer === 'p1') {
-            const name = document.getElementById('p1-name').textContent;
+            status.className   = `status-label ${aiPlayer}`;
+        } else if (gameState.currentPlayer === humanPlayer) {
+            const name = document.getElementById(`${humanPlayer}-name`).textContent;
             status.textContent = `${name}'s Turn`;
-            status.className   = 'status-label p1';
+            status.className   = `status-label ${humanPlayer}`;
         } else {
             status.textContent = "AI's Turn";
-            status.className   = 'status-label p2';
+            status.className   = `status-label ${aiPlayer}`;
         }
         updateTapHint();
         return;
@@ -1172,7 +1175,7 @@ function resetGame() {
         wallCounts:    { p1: WALLS_PER_PLAYER, p2: WALLS_PER_PLAYER },
         currentPlayer: 'p1',
         legalMoves:    [],
-        flipped:       onlineMode ? onlineRole === 'p2' : gameState.flipped,
+        flipped:       onlineMode ? onlineRole === 'p2' : (vsAI ? aiPlayer === 'p1' : gameState.flipped),
         gameOver:      false,
         movesP1:       0,
         movesP2:       0,
@@ -1184,7 +1187,11 @@ function resetGame() {
     document.getElementById('spectator-slot-bar').classList.add('hidden');
     const stepBtn = document.getElementById('btn-step-aside');
     if (stepBtn) { stepBtn.textContent = 'Step aside'; stepBtn.disabled = false; }
-    if (vsAI) document.getElementById('p2-name').textContent = 'AI';
+    if (vsAI) {
+        const humanPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
+        document.getElementById('p1-name').textContent = humanPlayer === 'p1' ? (getMyName() || 'Player 1') : 'AI';
+        document.getElementById('p2-name').textContent = humanPlayer === 'p2' ? (getMyName() || 'Player 2') : 'AI';
+    }
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
@@ -1726,6 +1733,7 @@ document.getElementById('btn-local').addEventListener('click', () => {
 document.getElementById('btn-ai').addEventListener('click', () => {
     playSound('Select');
     vsAI = true;
+    aiPlayer = 'p2';
     onlineMode = false;
     onlineRole = null;
     if (softLobby) { softLobby = false; softLobbyRestoreWin = false; }
@@ -1881,6 +1889,10 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
         document.getElementById('lobby-overlay').classList.remove('hidden');
         showLobbyView(isDiscord ? 'lview-discord' : 'lview-mode');
         resetGame();
+    } else if (vsAI) {
+        aiPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
+        resetGame();
+        triggerAI(); // fires only if AI now goes first (aiPlayer === 'p1')
     } else {
         resetGame();
     }
