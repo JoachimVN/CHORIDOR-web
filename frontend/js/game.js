@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.10.1';
+const APP_VERSION = 'v1.10.2';
 document.querySelectorAll('.lobby-version').forEach(el => { el.textContent = APP_VERSION; });
 
 const BOARD_SIZE = 9;
@@ -2182,3 +2182,10 @@ requestAnimationFrame(() => {
     updateLegalMoves();
     new ResizeObserver(() => { resizeCanvas(); render(); }).observe(canvas.parentElement);
 });
+
+// Screenshot automation bridge -- exposes module internals to injected scripts
+window.__choridor = {
+    get gameState() { return gameState; },
+    updateLegalMoves,
+    showWinScreen,
+};
