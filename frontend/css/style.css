@@ -710,9 +710,17 @@ button:active {
     align-items: center;
     justify-content: center;
     z-index: 2000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
 }
 
 .lobby-overlay.hidden { display: none; }
+
+/* Clean fade between lobby and game */
+.lobby-overlay.lobby-fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
 
 .lobby-card-close {
     position: absolute;
