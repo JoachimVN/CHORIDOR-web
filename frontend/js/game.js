@@ -1465,6 +1465,11 @@ function initSocket(errorElId, callback) {
 
     // Shown to a player when offered to play with a queued spectator
     socket.on('spectator-offer', ({ name, avatarUrl, opponentSteppingAside } = {}) => {
+        // Grace period is over: stop the "Opponent reconnecting..." countdown so it
+        // does not stay stuck at "0s" while the promotion offer is shown.
+        opponentReconnecting = false;
+        clearReconnectCountdown();
+        updateStatus();
         document.getElementById('spectator-offer-name').textContent = name || 'spectator';
         if (!document.getElementById('win-overlay').classList.contains('hidden')) {
             document.getElementById('win-overlay').classList.add('hidden');
