@@ -3,11 +3,18 @@ const { chromium } = require('playwright');
 const BASE = 'http://localhost:4321';
 const OUT  = 'docs/screenshots';
 
+// Mid-game state: ~22 moves in, 4 walls placed each, pawns well advanced
 const WALLS = [
-    { row: 4, col: 3, orientation: 'H' },
-    { row: 4, col: 5, orientation: 'H' },
-    { row: 2, col: 3, orientation: 'V' },
-    { row: 6, col: 2, orientation: 'H' },
+    // p1's walls (indices 0-3)
+    { row: 6, col: 3, orientation: 'H' },
+    { row: 6, col: 5, orientation: 'H' },
+    { row: 5, col: 1, orientation: 'V' },
+    { row: 4, col: 7, orientation: 'H' },
+    // p2's walls (indices 4-7)
+    { row: 3, col: 3, orientation: 'H' },
+    { row: 3, col: 5, orientation: 'H' },
+    { row: 2, col: 1, orientation: 'V' },
+    { row: 1, col: 6, orientation: 'V' },
 ];
 
 async function injectState(p, pawns, wallCounts, extra) {
@@ -16,7 +23,7 @@ async function injectState(p, pawns, wallCounts, extra) {
         gs.p1Pawn     = pawns.p1;
         gs.p2Pawn     = pawns.p2;
         gs.walls      = new Set(walls.map(w => JSON.stringify(w)));
-        gs.wallOwners = new Map(walls.map((w, i) => [JSON.stringify(w), i < 2 ? 'p1' : 'p2']));
+        gs.wallOwners = new Map(walls.map((w, i) => [JSON.stringify(w), i < 4 ? 'p1' : 'p2']));
         gs.wallCounts = wallCounts;
         Object.assign(gs, extra || {});
         window.__choridor.updateLegalMoves();
@@ -31,9 +38,10 @@ async function board(b) {
     await p.waitForTimeout(1500);
     await p.click('#btn-local');
     await p.waitForTimeout(800);
+    // p1 at row 2 (almost there), p2 at row 5; each used 4 walls leaving 6
     await injectState(p,
-        { p1: { row: 5, col: 4 }, p2: { row: 3, col: 3 } },
-        { p1: 8, p2: 8 },
+        { p1: { row: 2, col: 4 }, p2: { row: 5, col: 4 } },
+        { p1: 6, p2: 6 },
         null
     );
     await p.waitForTimeout(400);
@@ -50,10 +58,11 @@ async function win(b) {
     await p.waitForTimeout(1500);
     await p.click('#btn-local');
     await p.waitForTimeout(800);
+    // p1 crossed the finish line; p2 still at row 4
     await injectState(p,
-        { p1: { row: 0, col: 4 }, p2: { row: 3, col: 3 } },
-        { p1: 7, p2: 6 },
-        { movesP1: 12, movesP2: 11 }
+        { p1: { row: 0, col: 4 }, p2: { row: 4, col: 4 } },
+        { p1: 6, p2: 6 },
+        { movesP1: 24, movesP2: 23 }
     );
     await p.waitForTimeout(400);
     await p.evaluate(() => {
