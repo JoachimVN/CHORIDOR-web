@@ -124,6 +124,7 @@ function clearReconnectCountdown() {
 const isDiscord       = location.hostname.endsWith('.discordsays.com');
 let discordInstanceId = null;
 let discordSdk        = null;
+let discordRejoinPending = false; // true while a Discord boot rejoin is awaiting its result
 let matchStartTime    = 0;
 let matchRoomCode     = '';
 let _presenceTimer    = null;
@@ -1306,6 +1307,7 @@ function initSocket(errorElId, callback) {
     });
 
     socket.on('rejoin-success', ({ role, snapshot, p1Name, p2Name, p1Avatar, p2Avatar, code } = {}) => {
+        discordRejoinPending = false;
         spectatorMode        = false;
         onlineRole           = role;
         onlineMode           = true;
@@ -1314,6 +1316,7 @@ function initSocket(errorElId, callback) {
         opponentName   = role === 'p1' ? (p2Name   || '') : (p1Name   || '');
         opponentAvatar = role === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
         matchRoomCode  = code || matchRoomCode;
+        if (!matchStartTime) matchStartTime = Math.floor(Date.now() / 1000);
         gameState.flipped = role === 'p2';
         applyPlayerNames();
         hideLobby();
@@ -1326,6 +1329,16 @@ function initSocket(errorElId, callback) {
     // If we were already in a game (same-tab reconnect), treat as opponent disconnect.
     // If this is a fresh page load with a stale session, just clear quietly.
     socket.on('rejoin-failed', () => {
+        if (discordRejoinPending) {
+            // The activity game is gone (or grace expired): drop into matchmaking.
+            discordRejoinPending = false;
+            clearSession();
+            const statusText = document.getElementById('discord-status-text');
+            if (statusText) statusText.textContent = 'Finding opponent...';
+            setDiscordPresence({ state: 'Finding a match...', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' }, party: { size: [1, 2] } });
+            socket.emit('join-activity', { instanceId: discordInstanceId, name: getMyName(), avatarUrl: myAvatar });
+            return;
+        }
         if (onlineMode) handleOpponentDisconnected();
         else clearSession();
     });
@@ -2051,8 +2064,14 @@ if (isDiscord) try {
         const errEl = document.getElementById('discord-error');
         if (errEl) { errEl.textContent = `Auth failed: ${authErr?.message || authErr}`; errEl.classList.remove('hidden'); }
     }
-    // Auto-enter matchmaking queue
+    // If we left the activity mid-game, try to rejoin first; otherwise enter matchmaking.
     initSocket('discord-error', () => {
+        const session = getStoredSession();
+        if (session) {
+            discordRejoinPending = true;
+            socket.emit('rejoin-room', session);
+            return;
+        }
         const statusText = document.getElementById('discord-status-text');
         if (statusText) statusText.textContent = 'Finding opponent...';
         setDiscordPresence({ state: 'Finding a match...', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' }, party: { size: [1, 2] } });
