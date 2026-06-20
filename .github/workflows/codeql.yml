@@ -5,6 +5,7 @@ on:
     branches: [main, dev]
   pull_request:
     branches: [main]
+    paths-ignore: ['docs/screenshots/**']
   schedule:
     - cron: '0 3 * * 1'
 

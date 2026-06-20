@@ -5,6 +5,7 @@ on:
     branches: [main, dev]
   pull_request:
     branches: [main, dev]
+    paths-ignore: ['docs/screenshots/**']
 
 jobs:
   validate:
