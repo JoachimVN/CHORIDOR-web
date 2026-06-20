@@ -1936,7 +1936,7 @@ document.getElementById('spectator-slot-decline') .addEventListener('click', spe
 
 // External links inside the Discord activity must go through the SDK; a plain
 // target="_blank" is blocked in the sandboxed iframe.
-document.querySelectorAll('#lview-discord .lobby-icon-link').forEach(a => {
+document.querySelectorAll('.lobby-footer .lobby-icon-link').forEach(a => {
     a.addEventListener('click', e => {
         if (isDiscord && discordSdk) {
             e.preventDefault();

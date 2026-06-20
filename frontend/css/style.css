@@ -702,8 +702,10 @@ button:active {
 .lobby-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.88);
-    backdrop-filter: blur(4px);
+    background:
+        radial-gradient(120% 90% at 50% 38%, rgba(20, 24, 38, 0.40) 0%, rgba(6, 7, 12, 0.70) 72%),
+        rgba(6, 7, 12, 0.66);
+    backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -747,22 +749,23 @@ button:active {
 
 .lobby-card {
     position: relative;
-    background: #13151F;
-    border: 1px solid #1E2234;
-    border-radius: 20px;
-    padding: 52px 44px 40px;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 40px 32px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.65);
-    width: 520px;
+    box-shadow: none;
+    width: 380px;
+    max-width: calc(100vw - 48px);
     animation: lobby-card-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .lobby-logo {
-    height: 52px;
+    height: 46px;
     object-fit: contain;
-    margin-bottom: 40px;
+    margin-bottom: 52px;
 }
 
 .lobby-view {
@@ -866,99 +869,78 @@ button:active {
 .lobby-name-input:focus { border-color: #3E68A8; }
 .lobby-name-input::placeholder { color: #3A3F58; font-weight: normal; }
 
-/* Lobby mode cards */
-.lobby-mode-card {
+/* Lobby mode list */
+.lobby-mode-list {
     display: flex;
-    align-items: center;
-    gap: 20px;
+    flex-direction: column;
     width: 100%;
-    padding: 22px 24px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-    text-align: left;
-    margin-bottom: 12px;
-    border: 1px solid transparent;
 }
 
-.lobby-mode-card:last-of-type { margin-bottom: 0; }
+.lobby-mode-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 16px 14px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.16s ease;
+}
+
+.lobby-mode-row:hover { background: rgba(255, 255, 255, 0.04); }
+.lobby-mode-row:active { background: rgba(255, 255, 255, 0.07); }
 
 .mode-icon {
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    transition: opacity 0.18s ease;
+    width: 26px;
+    height: 26px;
+    transition: transform 0.16s ease;
 }
 
-.mode-text {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
+.lobby-mode-row:hover .mode-icon { transform: scale(1.08); }
 
 .mode-title {
     font-size: 16px;
     font-weight: bold;
+    color: #D2D6E4;
 }
 
 .mode-sub {
+    margin-left: auto;
     font-size: 12px;
     font-weight: normal;
+    color: #4A5070;
 }
 
-/* Local — red */
-#btn-local {
-    background: rgba(158, 74, 64, 0.08);
-    border-color: rgba(158, 74, 64, 0.2);
-}
-#btn-local .mode-icon { color: #C05A4E; }
-#btn-local .mode-title { color: #D8CCCA; }
-#btn-local .mode-sub { color: rgba(158, 74, 64, 0.55); }
-#btn-local:hover {
-    background: rgba(158, 74, 64, 0.14);
-    border-color: rgba(158, 74, 64, 0.4);
-    box-shadow: 0 4px 32px rgba(158, 74, 64, 0.12);
+.mode-arrow {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: #2E3350;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
-/* Online — blue */
-#btn-online {
-    background: rgba(62, 104, 168, 0.08);
-    border-color: rgba(62, 104, 168, 0.2);
-}
+.lobby-mode-row:hover .mode-arrow { opacity: 1; transform: translateX(0); }
+
+#btn-local  .mode-icon { color: #C05A4E; }
 #btn-online .mode-icon { color: #5080C8; }
-#btn-online .mode-title { color: #C8CED8; }
-#btn-online .mode-sub { color: rgba(62, 104, 168, 0.55); }
-#btn-online:hover {
-    background: rgba(62, 104, 168, 0.14);
-    border-color: rgba(62, 104, 168, 0.4);
-    box-shadow: 0 4px 32px rgba(62, 104, 168, 0.14);
-}
-
-/* vs AI — purple */
-#btn-ai {
-    background: rgba(100, 80, 168, 0.08);
-    border-color: rgba(100, 80, 168, 0.2);
-}
-#btn-ai .mode-icon { color: #8070C8; }
-#btn-ai .mode-title { color: #C8C4DA; }
-#btn-ai .mode-sub { color: rgba(100, 80, 168, 0.55); }
-#btn-ai:hover {
-    background: rgba(100, 80, 168, 0.14);
-    border-color: rgba(100, 80, 168, 0.4);
-    box-shadow: 0 4px 32px rgba(100, 80, 168, 0.14);
-}
+#btn-ai     .mode-icon { color: #8070C8; }
 
 .lobby-mode-disabled { cursor: not-allowed; }
 
-/* Lobby footer */
+/* Lobby footer (shared across all lobby views) */
 .lobby-footer {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    width: 100%;
-    margin-top: 20px;
+    gap: 14px;
+    margin-top: 48px;
     font-size: 11px;
-    color: #1E2234;
 }
 
 .lobby-footer a {
@@ -969,43 +951,49 @@ button:active {
 
 .lobby-footer a:hover { color: #7880B0; }
 
-.lobby-footer-legal {
-    flex: 1;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
 .lobby-footer-icons {
-    flex: 1;
     display: flex;
-    gap: 10px;
+    gap: 20px;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
 }
 
 .lobby-icon-link {
     display: flex;
     align-items: center;
-    color: #4A5080;
+    color: #3E4468;
     transition: color 0.15s;
 }
 
 .lobby-icon-link:hover { color: #7880B0; }
 
-.lobby-version {
-    flex: 1;
-    text-align: center;
-    color: #6870A0;
+.lobby-footer-meta {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    color: #2A2F48;
+    letter-spacing: 0.04em;
 }
 
-/* Social links on the Discord invite screen */
-.discord-social-icons {
-    flex: none;
-    justify-content: center;
-    gap: 18px;
-    margin-top: 18px;
+.lobby-version { color: #3E4468; }
+
+/* "Play AI while you wait" — quiet secondary action on the invite screens */
+.lobby-ai-link {
+    display: inline-block;
+    border: none;
+    background: none;
+    color: rgba(255, 255, 255, 0.42);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px 4px;
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.16);
+    text-underline-offset: 3px;
+    transition: color 0.15s;
 }
+
+.lobby-ai-link:hover { color: rgba(255, 255, 255, 0.7); }
 
 /* Discord activity waiting UI */
 .discord-queue-status {
