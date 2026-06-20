@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.9.3';
+const APP_VERSION = 'v1.10.0';
 document.querySelectorAll('.lobby-version').forEach(el => { el.textContent = APP_VERSION; });
 
 const BOARD_SIZE = 9;
@@ -132,6 +132,10 @@ if (isDiscord) { document.body.classList.add('discord-activity'); document.getEl
 let spectatorMode  = false;
 let spectatorCount = 0;
 
+let vsAI       = false;
+let aiWorker   = null;
+let aiThinking = false;
+
 function setDiscordPresence(activity) {
     if (!discordSdk) return;
     clearTimeout(_presenceTimer);
@@ -142,6 +146,7 @@ function setDiscordPresence(activity) {
 
 function isMyTurn() {
     if (spectatorMode || opponentReconnecting) return false;
+    if (vsAI && (gameState.currentPlayer !== 'p1' || aiThinking)) return false;
     return !onlineMode || gameState.currentPlayer === onlineRole;
 }
 
@@ -874,6 +879,7 @@ function movePawn(row, col) {
     gameState.currentPlayer = mover === 'p1' ? 'p2' : 'p1';
     updateStatus();
     updateLegalMoves();
+    if (vsAI) triggerAI();
 }
 
 // animateBoardWall=false when confirming a previewed wall (it already grew in)
@@ -901,6 +907,7 @@ function placeWall(row, col, orientation, animateBoardWall = true) {
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
+    if (vsAI) triggerAI();
 }
 
 function applyOpponentPawnMove(data) {
@@ -970,6 +977,34 @@ function hasPathToGoal(start, goalRow) {
     return false;
 }
 
+// ─── AI ───────────────────────────────────────────────────────────────────
+
+function triggerAI() {
+    if (!vsAI || gameState.gameOver || gameState.currentPlayer !== 'p2') return;
+    if (!aiWorker) {
+        aiWorker = new Worker('js/ai-worker.js');
+        aiWorker.onmessage = function(e) {
+            aiThinking = false;
+            const { move } = e.data;
+            if (!vsAI || gameState.gameOver) { updateStatus(); updateLegalMoves(); return; }
+            if (move.type === 'pawn') applyOpponentPawnMove(move);
+            else applyOpponentWallMove(move);
+        };
+    }
+    aiThinking = true;
+    updateStatus();
+    updateLegalMoves();
+    const walls = [...gameState.walls].map(k => JSON.parse(k));
+    aiWorker.postMessage({
+        state: {
+            p1: { ...gameState.p1Pawn },
+            p2: { ...gameState.p2Pawn },
+            walls,
+            wc: { ...gameState.wallCounts },
+        }
+    });
+}
+
 // ─── UI updates ───────────────────────────────────────────────────────────
 
 function updateWallCounts() {
@@ -1019,6 +1054,21 @@ function updateInMatchPresence(myTurn) {
 
 function updateStatus() {
     const status = document.getElementById('status');
+    if (vsAI) {
+        if (aiThinking) {
+            status.textContent = 'AI is thinking…';
+            status.className   = 'status-label p2';
+        } else if (gameState.currentPlayer === 'p1') {
+            const name = document.getElementById('p1-name').textContent;
+            status.textContent = `${name}'s Turn`;
+            status.className   = 'status-label p1';
+        } else {
+            status.textContent = "AI's Turn";
+            status.className   = 'status-label p2';
+        }
+        updateTapHint();
+        return;
+    }
     if (onlineMode) {
         const myTurn = isMyTurn();
         const opp = opponentName;
@@ -1113,6 +1163,7 @@ function resetGame() {
     clearTapPreview();
     pawnAnims = [];
     wallAnims = [];
+    aiThinking = false;
     gameState = {
         p1Pawn:        { row: 8, col: 4 },
         p2Pawn:        { row: 0, col: 4 },
@@ -1133,6 +1184,7 @@ function resetGame() {
     document.getElementById('spectator-slot-bar').classList.add('hidden');
     const stepBtn = document.getElementById('btn-step-aside');
     if (stepBtn) { stepBtn.textContent = 'Step aside'; stepBtn.disabled = false; }
+    if (vsAI) document.getElementById('p2-name').textContent = 'AI';
     updateWallCounts();
     updateStatus();
     updateLegalMoves();
@@ -1161,6 +1213,7 @@ function handleOpponentDisconnected() {
 }
 
 function leaveSoftLobby() {
+    vsAI = false; aiThinking = false;
     onlineMode = false; onlineRole = null; opponentName = ''; opponentAvatar = '';
     spectatorMode = false;
     socket?.disconnect(); socket = null;
@@ -1284,6 +1337,7 @@ function initSocket(errorElId, callback) {
     socket.on('room-joined', () => { onlineRole = 'p2'; });
 
     socket.on('game-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, role, code } = {}) => {
+        vsAI = false; aiThinking = false;
         if (role) onlineRole = role;
         opponentName   = onlineRole === 'p1' ? (p2Name   || '') : (p1Name   || '');
         opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
@@ -1662,9 +1716,23 @@ if (isDiscord) showLobbyView('lview-discord');
 
 document.getElementById('btn-local').addEventListener('click', () => {
     playSound('Select');
+    vsAI = false;
     if (softLobby) leaveSoftLobby();
     applyPlayerNames();
     hideLobby();
+});
+
+document.getElementById('btn-ai').addEventListener('click', () => {
+    playSound('Select');
+    vsAI = true;
+    onlineMode = false;
+    onlineRole = null;
+    if (softLobby) { softLobby = false; softLobbyRestoreWin = false; }
+    document.getElementById('p1-name').textContent = getMyName() || 'Player 1';
+    document.getElementById('p2-name').textContent = 'AI';
+    clearPlayerAvatars();
+    hideLobby();
+    resetGame();
 });
 
 document.getElementById('btn-online').addEventListener('click', () => {
