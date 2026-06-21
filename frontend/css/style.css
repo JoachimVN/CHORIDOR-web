@@ -614,7 +614,7 @@ button:active {
 
 .win-footer-btn {
     padding: 10px 22px;
-    background: rgba(255, 255, 255, 0.08);
+    background: #1C1E2E;
     border: none;
     border-radius: 100px;
     color: #9BA3C3;
@@ -626,7 +626,7 @@ button:active {
 }
 
 .win-footer-btn:hover {
-    background: rgba(255, 255, 255, 0.14);
+    background: #242538;
     color: #C8CCDC;
 }
 
@@ -636,8 +636,8 @@ button:active {
 }
 
 .win-footer-btn.incoming {
-    background: rgba(158, 74, 64, 0.18);
-    color: #C87060;
+    background: #231715;
+    color: #D88070;
     animation: rematch-pulse 1.2s ease-in-out infinite;
 }
 
@@ -676,7 +676,7 @@ button:active {
 }
 
 .win-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1A1D2A;
     color: #C8CCDC;
 }
 
@@ -684,11 +684,11 @@ button:active {
 
 .win-card.p1 .win-btn--primary       { color: #C87060; }
 .win-card.p1 .win-btn--primary svg   { opacity: 1; color: #9E4A40; }
-.win-card.p1 .win-btn--primary:hover { background: rgba(192, 90, 78, 0.12); color: #D88070; }
+.win-card.p1 .win-btn--primary:hover { background: #1C1210; color: #D88070; }
 
 .win-card.p2 .win-btn--primary       { color: #6898D8; }
 .win-card.p2 .win-btn--primary svg   { opacity: 1; color: #3E68A8; }
-.win-card.p2 .win-btn--primary:hover { background: rgba(80, 128, 200, 0.12); color: #78A8E8; }
+.win-card.p2 .win-btn--primary:hover { background: #0E1218; color: #78A8E8; }
 
 #btn-rematch.incoming { animation: rematch-pulse 1.4s ease-in-out infinite; }
 #btn-rematch.waiting  { opacity: 0.45; }
@@ -1096,14 +1096,14 @@ button:active {
     border-radius: 100px;
     font-size: 12px;
     font-weight: 500;
-    color: #6870A0;
+    color: #8890B8;
     pointer-events: none;
     z-index: 5;
     animation: bar-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .spectator-queue-pos {
-    color: #464C6A;
+    color: #6878A8;
     font-size: 11px;
 }
 

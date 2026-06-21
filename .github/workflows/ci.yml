@@ -7,6 +7,10 @@ on:
     branches: [main, dev]
     paths-ignore: ['docs/screenshots/**']
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   validate:
     runs-on: ubuntu-latest
