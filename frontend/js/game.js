@@ -1693,7 +1693,7 @@ function showLobby() {
     clearTimeout(_lobbyFadeTimer);
     overlay.classList.add('lobby-fade-out');
     overlay.classList.remove('hidden');
-    void overlay.offsetWidth; // reflow so the fade-in transition runs
+    overlay.getBoundingClientRect(); // force reflow so the fade-in transition runs
     overlay.classList.remove('lobby-fade-out');
 }
 
