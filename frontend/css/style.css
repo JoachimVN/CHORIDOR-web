@@ -898,8 +898,7 @@ button:active {
     transition: background 0.16s ease;
 }
 
-.lobby-mode-row:hover { background: rgba(255, 255, 255, 0.04); }
-.lobby-mode-row:active { background: rgba(255, 255, 255, 0.07); }
+.lobby-mode-row:active { filter: brightness(1.1); }
 
 .mode-icon {
     flex-shrink: 0;
@@ -938,6 +937,10 @@ button:active {
 #btn-local  .mode-icon { color: #C05A4E; }
 #btn-online .mode-icon { color: #5080C8; }
 #btn-ai     .mode-icon { color: #8070C8; }
+
+#btn-local:hover  { background: rgba(192, 90, 78, 0.14); }
+#btn-online:hover { background: rgba(80, 128, 200, 0.14); }
+#btn-ai:hover     { background: rgba(128, 112, 200, 0.14); }
 
 .lobby-mode-disabled { cursor: not-allowed; }
 
