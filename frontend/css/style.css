@@ -861,11 +861,12 @@ button:active {
 
 .lobby-name-input {
     width: 100%;
-    background: #0D0F1A;
-    border: 1px solid #2E3250;
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-size: 15px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+    padding: 8px 4px;
+    font-size: 16px;
     font-weight: bold;
     color: #C8CCDC;
     text-align: center;
@@ -874,8 +875,8 @@ button:active {
     font-family: inherit;
 }
 
-.lobby-name-input:focus { border-color: #3E68A8; }
-.lobby-name-input::placeholder { color: #3A3F58; font-weight: normal; }
+.lobby-name-input::placeholder { color: #454A68; font-weight: bold; }
+.lobby-name-input:focus { border-bottom-color: rgba(255, 255, 255, 0.16); }
 
 /* Lobby mode list */
 .lobby-mode-list {
