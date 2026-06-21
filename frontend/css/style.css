@@ -612,30 +612,31 @@ button:active {
 .win-btn {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
-    padding: 11px 28px;
-    background: #1E2130;
-    color: #8890A8;
-    border: 1px solid #2E3250;
-    border-radius: 6px;
+    padding: 12px 30px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #C8CCDC;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 10px;
     font-size: 13px;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background 0.18s, border-color 0.18s, color 0.18s;
 }
 
 .win-btn:hover {
-    background: #252840;
-    color: #C8CCDC;
-    border-color: #3E4470;
+    background: rgba(255, 255, 255, 0.09);
+    color: #EAEDF6;
+    border-color: rgba(255, 255, 255, 0.18);
 }
 
 .win-btn + .win-btn { margin-top: 10px; }
 
 .win-btn:active {
-    background: #3E68A8;
+    background: rgba(80, 128, 200, 0.28);
     color: #FFFFFF;
-    border-color: #2E508A;
+    border-color: rgba(80, 128, 200, 0.5);
 }
 
 @keyframes rematch-pulse {
