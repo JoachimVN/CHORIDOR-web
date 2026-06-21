@@ -14,7 +14,7 @@
     <!-- Lobby -->
     <div id="lobby-overlay" class="lobby-overlay">
         <div class="lobby-card">
-            <button class="lobby-card-close hidden" id="btn-lobby-back" aria-label="Back to game">✕</button>
+            <button class="lobby-card-close modal-close hidden" id="btn-lobby-back" aria-label="Back to game">✕</button>
             <img src="images/logos/logo.svg" alt="CHORIDOR" class="lobby-logo">
 
             <div id="lview-mode" class="lobby-view">
@@ -145,7 +145,7 @@
     <div id="legal-modal" class="legal-modal hidden">
         <div class="legal-modal-backdrop" id="legal-modal-close"></div>
         <div class="legal-modal-card">
-            <button class="legal-modal-x" id="legal-modal-x">✕</button>
+            <button class="legal-modal-x modal-close" id="legal-modal-x">✕</button>
             <div id="legal-modal-content"></div>
         </div>
     </div>
@@ -153,7 +153,7 @@
     <!-- Win screen -->
     <div id="win-overlay" class="win-overlay hidden">
         <div class="win-card" id="win-card">
-            <button class="win-card-close" id="win-card-close" aria-label="Close">✕</button>
+            <button class="win-card-close modal-close" id="win-card-close" aria-label="Close">✕</button>
             <div class="win-pawn" id="win-pawn"></div>
             <div class="win-title" id="win-message"></div>
 
@@ -351,9 +351,7 @@
     <!-- How to Play modal -->
     <div id="htp-overlay" class="htp-overlay hidden">
         <div class="htp-card">
-            <button class="htp-close" id="htp-close" aria-label="Close">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+            <button class="htp-close modal-close" id="htp-close" aria-label="Close">✕</button>
             <div class="htp-dots" id="htp-dots">
                 <button class="htp-dot active" data-idx="0" aria-label="Slide 1"></button>
                 <button class="htp-dot" data-idx="1" aria-label="Slide 2"></button>

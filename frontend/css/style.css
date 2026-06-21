@@ -206,6 +206,24 @@ button:active {
     border-color: #2E508A;
 }
 
+/* Unified close button — used on all modal/overlay X buttons */
+.modal-close {
+    position: absolute;
+    background: none;
+    border: none;
+    color: #404668;
+    font-size: 17px;
+    font-weight: normal;
+    cursor: pointer;
+    padding: 6px 8px;
+    line-height: 1;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.modal-close:hover  { background: none; color: #9BA3C3; }
+.modal-close:active { background: none; color: #C8CCDC; }
+
 .icon-btn {
     padding: max(5px, 0.65vh) 9px;
     display: flex;
@@ -444,23 +462,7 @@ button:active {
     max-width: calc(100vw - 48px);
 }
 
-.win-card-close {
-    position: absolute;
-    top: 10px;
-    right: 8px;
-    background: none;
-    border: none;
-    color: #3A4060;
-    font-size: 17px;
-    cursor: pointer;
-    padding: 6px 8px;
-    line-height: 1;
-    border-radius: 4px;
-    transition: color 0.15s;
-}
-
-.win-card-close:hover  { color: #9BA3C3; }
-.win-card-close:active { background: none; }
+.win-card-close { top: 10px; right: 8px; }
 
 .win-pawn {
     width: 56px;
@@ -739,23 +741,7 @@ button:active {
     pointer-events: none;
 }
 
-.lobby-card-close {
-    position: absolute;
-    top: 12px;
-    right: 14px;
-    background: none;
-    border: none;
-    color: #4A5272;
-    font-size: 17px;
-    cursor: pointer;
-    padding: 6px 8px;
-    line-height: 1;
-    border-radius: 4px;
-    transition: color 0.15s;
-}
-
-.lobby-card-close:hover  { color: #9BA3C3; background: none; }
-.lobby-card-close:active { background: none; }
+.lobby-card-close { top: 12px; right: 14px; }
 .lobby-card-close.hidden { display: none; }
 
 @keyframes lobby-card-in {
@@ -1150,21 +1136,7 @@ button:active {
     z-index: 1;
 }
 
-.legal-modal-x {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    background: none;
-    border: none;
-    color: #454A68;
-    font-size: 15px;
-    cursor: pointer;
-    padding: 4px 8px;
-    line-height: 1;
-    transition: color 0.15s;
-}
-
-.legal-modal-x:hover { color: #8890A8; background: none; border: none; }
+.legal-modal-x { top: 14px; right: 14px; }
 
 .legal-modal-card::-webkit-scrollbar { width: 6px; }
 .legal-modal-card::-webkit-scrollbar-track { background: transparent; }
