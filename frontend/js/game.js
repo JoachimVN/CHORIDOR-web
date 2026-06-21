@@ -1919,7 +1919,15 @@ document.getElementById('btn-copy-link').addEventListener('click', () => {
 
 document.getElementById('win-card-close').addEventListener('click', () => {
     document.getElementById('win-overlay').classList.add('hidden');
-    if (onlineMode && !spectatorMode) document.getElementById('win-footer').classList.remove('hidden');
+    if (!spectatorMode) {
+        document.getElementById('win-footer-play-again').classList.toggle('hidden', onlineMode);
+        document.getElementById('win-footer-rematch').classList.toggle('hidden', !onlineMode);
+        document.getElementById('win-footer').classList.remove('hidden');
+    }
+});
+
+document.getElementById('win-footer-play-again').addEventListener('click', () => {
+    document.getElementById('play-again-btn').click();
 });
 
 document.getElementById('win-footer-rematch').addEventListener('click', handleRematchClick);
