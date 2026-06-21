@@ -41,5 +41,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/screenshots/Board.png docs/screenshots/Win.png
-          git diff --cached --quiet || git commit -m "chore: update board/win screenshots [skip ci]"
-          git push origin HEAD:${{ github.head_ref || 'dev' }}
+          if git diff --cached --quiet; then
+            echo "No screenshot changes"
+            exit 0
+          fi
+          git commit -m "chore: update board/win screenshots [skip ci]"
+          BRANCH=${{ github.head_ref || 'dev' }}
+          for i in 1 2 3 4 5; do
+            git push origin HEAD:$BRANCH && exit 0
+            echo "Push rejected, rebasing on origin/$BRANCH (attempt $i)..."
+            git pull --rebase origin $BRANCH
+          done
+          echo "Failed to push screenshots after 5 attempts" >&2
+          exit 1
