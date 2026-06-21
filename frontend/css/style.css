@@ -570,54 +570,55 @@ button:active {
 
 .win-wall-mini.used { background: rgba(255, 255, 255, 0.07); }
 
-/* Bar slot — reserved space below the board for notification pills */
+/* Bar slot — zero-height anchor; pills float upward into the board */
 .bar-slot {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 52px;
-    padding: 6px 16px;
+    position: relative;
+    height: 0;
+    overflow: visible;
     flex-shrink: 0;
 }
 
 @keyframes bar-in {
-    from { opacity: 0; transform: translateY(10px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.97); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
 /* Game notification pills */
 .win-footer {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 7px 7px 7px 16px;
-    background: rgba(8, 10, 18, 0.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    gap: 5px;
+    padding: 5px;
+    background: rgba(10, 12, 22, 0.90);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 100px;
-    animation: bar-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+    animation: bar-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .win-footer.hidden { display: none; }
 
 .win-footer-label {
     font-size: 12px;
-    color: #565C78;
+    color: #5C6280;
     font-weight: 500;
     white-space: nowrap;
-    padding-right: 4px;
+    padding: 0 10px 0 12px;
 }
 
 .win-footer-btn {
-    padding: 6px 14px;
-    background: rgba(255, 255, 255, 0.07);
+    padding: 10px 22px;
+    background: rgba(255, 255, 255, 0.08);
     border: none;
     border-radius: 100px;
-    color: #9098B2;
-    font-size: 12px;
+    color: #9BA3C3;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
@@ -625,11 +626,14 @@ button:active {
 }
 
 .win-footer-btn:hover {
-    background: rgba(255, 255, 255, 0.13);
+    background: rgba(255, 255, 255, 0.14);
     color: #C8CCDC;
 }
 
-.win-footer-btn.win-footer-muted { opacity: 0.45; }
+.win-footer-btn.win-footer-muted {
+    background: transparent;
+    opacity: 0.55;
+}
 
 .win-footer-btn.incoming {
     background: rgba(158, 74, 64, 0.18);
