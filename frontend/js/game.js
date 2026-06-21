@@ -1816,6 +1816,7 @@ nameInput?.addEventListener('input', () => {
     const val = nameInput.value.trim();
     if (val) localStorage.setItem('choridor_player_name', val);
     else localStorage.removeItem('choridor_player_name');
+    if (joinNameInput) joinNameInput.value = nameInput.value;
     if (!onlineMode) applyPlayerNames();
 });
 
