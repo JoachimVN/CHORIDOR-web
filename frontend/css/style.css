@@ -803,13 +803,14 @@ button:active {
 
 .lobby-input {
     width: 100%;
-    background: #0D0F1A;
-    border: 1px solid #2E3250;
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-size: 1.4rem;
+    background: none;
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+    padding: 8px 4px;
+    font-size: 1.6rem;
     font-weight: bold;
-    letter-spacing: 0.25em;
+    letter-spacing: 0.3em;
     color: #C8CCDC;
     text-align: center;
     text-transform: uppercase;
@@ -819,7 +820,8 @@ button:active {
     transition: border-color 0.2s;
 }
 
-.lobby-input:focus { border-color: #3E68A8; }
+.lobby-input::placeholder { color: #2E3350; }
+.lobby-input:focus { border-bottom-color: rgba(255, 255, 255, 0.16); }
 
 .lobby-error {
     color: #9E4A40;
