@@ -615,7 +615,7 @@ button:active {
     justify-content: center;
     gap: 10px;
     padding: 12px 30px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #181B29;
     color: #C8CCDC;
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 10px;
@@ -626,7 +626,7 @@ button:active {
 }
 
 .win-btn:hover {
-    background: rgba(255, 255, 255, 0.09);
+    background: #20243A;
     color: #EAEDF6;
     border-color: rgba(255, 255, 255, 0.18);
 }
@@ -634,9 +634,9 @@ button:active {
 .win-btn + .win-btn { margin-top: 10px; }
 
 .win-btn:active {
-    background: rgba(80, 128, 200, 0.28);
+    background: #3E68A8;
     color: #FFFFFF;
-    border-color: rgba(80, 128, 200, 0.5);
+    border-color: #5A84C4;
 }
 
 @keyframes rematch-pulse {
