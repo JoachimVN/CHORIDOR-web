@@ -793,6 +793,18 @@ button:active {
     margin-bottom: 22px;
 }
 
+/* Field label for form views (join) */
+.lobby-field-label {
+    color: #454A68;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.lobby-field-label + .lobby-name-wrap { margin-bottom: 26px; }
+
 .lobby-code {
     font-size: 2.2rem;
     font-weight: bold;
@@ -821,7 +833,7 @@ button:active {
     transition: border-color 0.2s;
 }
 
-.lobby-input::placeholder { color: #2E3350; }
+.lobby-input::placeholder { color: #3A4060; }
 .lobby-input:focus { border-bottom-color: rgba(255, 255, 255, 0.16); }
 
 .lobby-error {

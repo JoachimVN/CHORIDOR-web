@@ -1884,7 +1884,7 @@ document.getElementById('btn-create').addEventListener('click', () => {
     initSocket('create-error', () => socket.emit('create-room', { name: getMyName() }));
 });
 
-document.getElementById('btn-join').addEventListener('click', () => { playSound('Select'); showLobbyView('lview-join'); });
+document.getElementById('btn-join').addEventListener('click', () => { playSound('Select'); showLobbyView('lview-join'); syncJoinBtn(); });
 document.getElementById('btn-join-back').addEventListener('click', () => { playSound('Select'); showLobbyView('lview-online'); });
 
 document.getElementById('btn-waiting-back').addEventListener('click', () => {
@@ -1986,11 +1986,19 @@ document.getElementById('room-code-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('btn-join-confirm').click();
 });
 
+// Only reveal "Join Game" once a code has been entered.
+function syncJoinBtn() {
+    const code = document.getElementById('room-code-input').value.trim();
+    document.getElementById('btn-join-confirm').classList.toggle('hidden', code.length === 0);
+}
+document.getElementById('room-code-input').addEventListener('input', syncJoinBtn);
+
 // Auto-join if URL contains ?room=CODE (skip in Discord — uses join-activity instead)
 const urlRoom = !isDiscord && new URLSearchParams(location.search).get('room');
 if (urlRoom) {
     showLobbyView('lview-join');
     document.getElementById('room-code-input').value = urlRoom.toUpperCase();
+    syncJoinBtn();
 }
 
 ['btn-tos', 'btn-privacy'].forEach(id => {
