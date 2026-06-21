@@ -1244,6 +1244,7 @@ function handleOpponentDisconnected() {
     clearSession();
     opponentReconnecting = false;
     clearReconnectCountdown();
+    if (rematchState !== 'idle') updateRematchBtn('idle');
     opponentName   = '';
     opponentAvatar = '';
     applyPlayerNames();
