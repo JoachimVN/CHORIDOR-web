@@ -249,41 +249,40 @@
             </div>
         </div>
 
-        <div class="bar-slot">
-            <!-- Shown when win overlay is dismissed -->
-            <div id="win-footer" class="win-footer hidden">
-                <button id="win-footer-play-again" class="win-footer-btn hidden">Play Again</button>
-                <button id="win-footer-rematch" class="win-footer-btn hidden">Rematch</button>
-            </div>
-
-            <!-- Shown in Discord mode when opponent disconnects and no spectators -->
-            <div id="discord-rejoin-bar" class="win-footer hidden">
-                <span class="win-footer-label">Opponent left</span>
-                <button id="discord-find-match-btn" class="win-footer-btn">Play with waiting player</button>
-            </div>
-
-            <!-- Shown to a player when offered to play with a queued spectator -->
-            <div id="spectator-offer-bar" class="win-footer hidden">
-                <span class="win-footer-label">Play with <span id="spectator-offer-name"></span>?</span>
-                <button id="spectator-offer-accept" class="win-footer-btn">Accept</button>
-                <button id="spectator-offer-decline" class="win-footer-btn win-footer-muted">Decline</button>
-            </div>
-
-            <!-- Shown to a spectator when offered a player slot -->
-            <div id="spectator-slot-bar" class="win-footer hidden">
-                <span class="win-footer-label">Your turn! Play vs <span id="spectator-slot-opponent"></span></span>
-                <button id="spectator-slot-accept" class="win-footer-btn">Play</button>
-                <button id="spectator-slot-decline" class="win-footer-btn win-footer-muted">Skip</button>
-            </div>
-
-            <!-- Shown while playing a filler AI game and still waiting for a real opponent -->
-            <div id="filler-waiting-bar" class="win-footer hidden">
-                <span class="win-footer-label" id="filler-waiting-label">Waiting for a friend</span>
-                <button id="filler-waiting-back" class="win-footer-btn win-footer-muted">Back to invite</button>
-            </div>
-        </div>
-
         <div class="bottom-bar">
+            <div class="bar-slot">
+                <!-- Shown when win overlay is dismissed -->
+                <div id="win-footer" class="win-footer hidden">
+                    <button id="win-footer-play-again" class="win-footer-btn hidden">Play Again</button>
+                    <button id="win-footer-rematch" class="win-footer-btn hidden">Rematch</button>
+                </div>
+
+                <!-- Shown in Discord mode when opponent disconnects and no spectators -->
+                <div id="discord-rejoin-bar" class="win-footer hidden">
+                    <span class="win-footer-label">Opponent left</span>
+                    <button id="discord-find-match-btn" class="win-footer-btn">Find match</button>
+                </div>
+
+                <!-- Shown to a player when offered to play with a queued spectator -->
+                <div id="spectator-offer-bar" class="win-footer hidden">
+                    <span class="win-footer-label">Play with <span id="spectator-offer-name"></span>?</span>
+                    <button id="spectator-offer-accept" class="win-footer-btn">Accept</button>
+                    <button id="spectator-offer-decline" class="win-footer-btn win-footer-muted">Decline</button>
+                </div>
+
+                <!-- Shown to a spectator when offered a player slot -->
+                <div id="spectator-slot-bar" class="win-footer hidden">
+                    <span class="win-footer-label">Play vs <span id="spectator-slot-opponent"></span>?</span>
+                    <button id="spectator-slot-accept" class="win-footer-btn">Play</button>
+                    <button id="spectator-slot-decline" class="win-footer-btn win-footer-muted">Skip</button>
+                </div>
+
+                <!-- Shown while playing a filler AI game and still waiting for a real opponent -->
+                <div id="filler-waiting-bar" class="win-footer hidden">
+                    <span class="win-footer-label" id="filler-waiting-label">Waiting for a friend</span>
+                    <button id="filler-waiting-back" class="win-footer-btn win-footer-muted">Back to invite</button>
+                </div>
+            </div>
             <div id="tap-confirm-hint" class="tap-confirm-hint" aria-hidden="true">
                 <div class="tap-confirm-row">
                     <button type="button" class="tap-confirm-btn tap-confirm-cancel" id="tap-confirm-no" aria-label="Cancel wall preview" title="Cancel">
