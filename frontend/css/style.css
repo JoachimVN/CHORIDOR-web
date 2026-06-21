@@ -783,12 +783,6 @@ button:active {
     width: 100%;
 }
 
-.lobby-buttons {
-    display: flex;
-    gap: 14px;
-    margin-bottom: 16px;
-}
-
 .lobby-subtitle {
     color: #454A68;
     font-size: 11px;
@@ -942,6 +936,9 @@ button:active {
 #btn-local:hover  { background: rgba(192, 90, 78, 0.14); }
 #btn-online:hover { background: rgba(80, 128, 200, 0.14); }
 #btn-ai:hover     { background: rgba(128, 112, 200, 0.14); }
+
+#btn-create .mode-icon, #btn-join .mode-icon { color: #5080C8; }
+#btn-create:hover, #btn-join:hover { background: rgba(80, 128, 200, 0.14); }
 
 .lobby-mode-disabled { cursor: not-allowed; }
 
