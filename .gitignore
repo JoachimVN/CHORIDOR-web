@@ -1,3 +1,12 @@
+# Ignore Visual Studio Code settings folder
 /.vscode
+
+# Node modules
 node_modules/
+
+# MCP server configuration file (contains secrets, do not commit)
 .mcp.json
+
+# Audacity project temp files
+*.aup3-shm
+*.aup3-wal
