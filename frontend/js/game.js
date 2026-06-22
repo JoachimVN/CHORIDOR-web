@@ -2126,7 +2126,7 @@ function armResign() {
     resignBtn.style.setProperty('--resign-arm-ms', `${RESIGN_ARM_MS}ms`);
     // Restart the drain animation cleanly if re-armed in quick succession.
     resignBtn.classList.remove('armed');
-    void resignBtn.offsetWidth;
+    resignBtn.getBoundingClientRect(); // force reflow so the animation replays
     resignBtn.classList.add('armed');
     resignBtn.setAttribute('aria-label', 'Confirm resign');
     resignLabel.textContent = 'Sure?';
