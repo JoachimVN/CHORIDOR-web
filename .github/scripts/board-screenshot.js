@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { prepPage, saveIfChanged } = require('./screenshot-utils');
 
 const BASE = 'http://localhost:4321';
 const OUT  = 'docs/screenshots';
@@ -62,6 +63,7 @@ async function injectState(p, state) {
 
 async function board(b) {
     const p = await b.newPage();
+    await prepPage(p);
     await p.setViewportSize({ width: 1440, height: 900 });
     await p.addInitScript(() => localStorage.setItem('choridor_htp_seen', '1'));
     await p.goto(BASE);
@@ -70,13 +72,14 @@ async function board(b) {
     await p.waitForTimeout(800);
     await injectState(p, BOARD);
     await p.waitForTimeout(400);
-    await p.screenshot({ path: `${OUT}/Board.png` });
+    await saveIfChanged(p, `${OUT}/Board.png`);
     await p.close();
-    console.log('Board screenshot saved.');
+    console.log('Board screenshot done.');
 }
 
 async function win(b) {
     const p = await b.newPage();
+    await prepPage(p);
     await p.setViewportSize({ width: 1440, height: 900 });
     await p.addInitScript(() => localStorage.setItem('choridor_htp_seen', '1'));
     await p.goto(BASE);
@@ -91,9 +94,9 @@ async function win(b) {
         window.__choridor.showWinScreen('Player 1', 'p1');
     });
     await p.waitForTimeout(400);
-    await p.screenshot({ path: `${OUT}/Win.png` });
+    await saveIfChanged(p, `${OUT}/Win.png`);
     await p.close();
-    console.log('Win screenshot saved.');
+    console.log('Win screenshot done.');
 }
 
 (async () => {
