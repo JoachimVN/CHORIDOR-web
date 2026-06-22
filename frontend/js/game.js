@@ -1,4 +1,5 @@
 import { APP_VERSION } from './version.js';
+import posthog from './vendor/posthog.mjs';
 document.querySelectorAll('.lobby-version').forEach(el => { el.textContent = APP_VERSION; });
 
 const BOARD_SIZE = 9;
@@ -29,15 +30,40 @@ const SOCKET_PATH = location.hostname.endsWith('.discordsays.com') ? '/api/socke
 // source for online matches; these client events additionally cover local and
 // AI games the server never sees. Client events carry no $is_server flag, so
 // dashboards filter on it to avoid double-counting online games. Analytics must
-// never break gameplay, hence the swallow. `mode` is sent display-ready.
-function track(event, props = {}) {
+// never break gameplay, hence the swallows. `mode` is sent display-ready.
+//
+// posthog-js is bundled locally (js/vendor/posthog.mjs) rather than loaded from
+// PostHog's CDN, because the Discord Activity sandbox blocks that CDN. On the
+// web we hit PostHog directly; inside Discord we route ingestion through the
+// `/phog` URL mapping (see the Discord block below), so init is deferred until
+// after patchUrlMappings runs. advanced_disable_decide keeps us to ingestion
+// only (no flags/surveys/recording, none of which we use).
+let phReady = false;
+function initPosthog(apiHost) {
     try {
-        globalThis.posthog?.capture(event, {
+        posthog.init('phc_op7vj5oq9nrZVLx6r6UgLBHBaBxwUoH7KzkPtsq2CvGF', {
+            api_host: apiHost,
+            person_profiles: 'always',
+            autocapture: false,
+            capture_pageview: true,
+            capture_pageleave: true,
+            advanced_disable_decide: true,
+        });
+        phReady = true;
+    } catch { /* ignore */ }
+}
+function track(event, props = {}) {
+    if (!phReady) return;
+    try {
+        posthog.capture(event, {
             source: location.hostname.endsWith('.discordsays.com') ? 'discord' : 'web',
             ...props,
         });
     } catch { /* ignore */ }
 }
+// Web initialises immediately. Discord initialises after patchUrlMappings (see
+// the Discord Activity block), so its ingestion requests can leave the sandbox.
+if (!location.hostname.endsWith('.discordsays.com')) initPosthog('https://eu.i.posthog.com');
 function currentMode() {
     if (onlineMode) return 'Online';
     if (vsAI)       return 'AI';
@@ -2303,10 +2329,14 @@ if (isDiscord) try {
     const sdk = new DiscordSDK('1515199692793843712');
     await sdk.ready();
     discordInstanceId = sdk.instanceId;
-    patchUrlMappings([{
-        prefix: '/api',
-        target: 'choridor-web-production.up.railway.app',
-    }]);
+    patchUrlMappings([
+        { prefix: '/api',  target: 'choridor-web-production.up.railway.app' },
+        // PostHog ingestion. Requires a matching URL mapping in the Discord
+        // Developer Portal: /phog -> eu.i.posthog.com
+        { prefix: '/phog', target: 'eu.i.posthog.com' },
+    ]);
+    // Now that requests to /phog are proxied out of the sandbox, start analytics.
+    initPosthog(`${location.origin}/phog`);
     try {
         const { code } = await sdk.commands.authorize({ client_id: '1515199692793843712', scope: ['identify', 'rpc.activities.write'], response_type: 'code' });
         const res  = await fetch('/api/auth/discord', {
