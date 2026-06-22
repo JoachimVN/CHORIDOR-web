@@ -106,9 +106,20 @@ function trackGameCompleted(winnerRole, reason) {
     if (fillerAI || spectatorMode) return;
     const movesP1 = gameState.movesP1;
     const movesP2 = gameState.movesP2;
+    // Outcome from this device's perspective, so a person's timeline reads as
+    // won/lost rather than just "p1 won". Online uses our seat; vs AI is the seat
+    // the human holds (aiPlayer is the computer). Local is two humans on one
+    // device, so there is no single player result: both stay null.
+    let playerRole = null;
+    if (onlineMode) playerRole = onlineRole;
+    else if (vsAI)  playerRole = aiPlayer === 'p1' ? 'p2' : 'p1';
+    let result = null;
+    if (playerRole) result = winnerRole === playerRole ? 'won' : 'lost';
     track('game_completed', {
         mode:        currentMode(),
         winner_role: winnerRole,
+        player_role: playerRole,
+        result,
         reason,
         moves_p1:    movesP1,
         moves_p2:    movesP2,
