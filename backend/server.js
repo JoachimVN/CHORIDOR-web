@@ -245,6 +245,11 @@ function broadcastQueuePositions(room) {
     });
 }
 
+// Send an event to every live spectator of a room (players are excluded).
+function notifySpectators(room, event, payload) {
+    room.spectators.forEach(s => io.sockets.sockets.get(s.socketId)?.emit(event, payload));
+}
+
 function removeSpectator(room, code, socketId) {
     room.spectators = room.spectators.filter(s => s.socketId !== socketId);
     broadcastQueuePositions(room);
@@ -305,6 +310,10 @@ function handlePlayerDisconnect(room, code, socket, isP1) {
     room.reconnect = { slot, token, timer, oldSocketId: socket.id };
 
     io.sockets.sockets.get(remainingId)?.emit('opponent-reconnecting', { graceSecs: RECONNECT_GRACE_MS / 1000 });
+    notifySpectators(room, 'spectator-player-disconnected', {
+        name: isP1 ? room.p1Name : room.p2Name,
+        graceSecs: RECONNECT_GRACE_MS / 1000,
+    });
     console.log(`Room ${code}: ${slot} disconnected — grace period started`);
 }
 
@@ -590,6 +599,7 @@ io.on('connection', socket => {
 
         const remainingId = role === 'p1' ? room.p2 : room.p1;
         if (remainingId) io.sockets.sockets.get(remainingId)?.emit('opponent-reconnected');
+        notifySpectators(room, 'spectator-player-reconnected', { name: role === 'p1' ? room.p1Name : room.p2Name });
 
         console.log(`Room ${code}: ${role} rejoined (was ${oldSocketId})`);
     });

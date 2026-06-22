@@ -105,13 +105,13 @@ function clearSession()     { try { localStorage.removeItem(SESSION_KEY); } catc
 function getStoredSession() { try { const r = localStorage.getItem(SESSION_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
 
 let _reconnectCountdownId = null;
-function startReconnectCountdown(secs) {
+function startReconnectCountdown(secs, who = 'Opponent') {
     clearReconnectCountdown();
     let remaining = secs;
     const tick = () => {
         if (!opponentReconnecting) return;
         const s = document.getElementById('status');
-        s.textContent = `Opponent reconnecting… ${remaining}s`;
+        s.textContent = `${who} reconnecting… ${remaining}s`;
         s.className   = 'status-label';
         if (remaining > 0) { remaining--; _reconnectCountdownId = setTimeout(tick, 1000); }
     };
@@ -119,6 +119,11 @@ function startReconnectCountdown(secs) {
 }
 function clearReconnectCountdown() {
     if (_reconnectCountdownId) { clearTimeout(_reconnectCountdownId); _reconnectCountdownId = null; }
+}
+// Reset the "reconnecting" state and stop its status-label countdown.
+function clearReconnectState() {
+    opponentReconnecting = false;
+    clearReconnectCountdown();
 }
 
 const isDiscord       = location.hostname.endsWith('.discordsays.com');
@@ -1396,6 +1401,19 @@ function initSocket(errorElId, callback) {
         render();
     });
 
+    // Spectators see a disconnect in the same status label players do.
+    socket.on('spectator-player-disconnected', ({ name, graceSecs } = {}) => {
+        if (!spectatorMode) return;
+        opponentReconnecting = true;
+        startReconnectCountdown(graceSecs ?? 12, name || 'A player');
+    });
+
+    socket.on('spectator-player-reconnected', () => {
+        if (!spectatorMode) return;
+        clearReconnectState();
+        updateStatus();
+    });
+
     socket.on('room-created', ({ code }) => {
         onlineRole = 'p1';
         document.getElementById('room-code-display').textContent = code;
@@ -1436,6 +1454,7 @@ function initSocket(errorElId, callback) {
 
     socket.on('rematch-start', ({ p1Name, p2Name, p1Avatar, p2Avatar } = {}) => {
         if (spectatorMode) {
+            clearReconnectState();
             document.getElementById('p1-name').textContent = p1Name || 'Player 1';
             document.getElementById('p2-name').textContent = p2Name || 'Player 2';
             setPlayerAvatar('p1', p1Avatar);
@@ -1460,6 +1479,7 @@ function initSocket(errorElId, callback) {
 
     socket.on('spectate-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, snapshot, queuePosition, spectatorCount: sc, steppedAside } = {}) => {
         stopFillerAI();
+        clearReconnectState();
         spectatorMode  = true;
         onlineMode     = false;
         if (steppedAside) { onlineRole = null; opponentName = ''; opponentAvatar = ''; }
@@ -1494,6 +1514,7 @@ function initSocket(errorElId, callback) {
 
     socket.on('become-player', ({ role, p1Name, p2Name, p1Avatar, p2Avatar, code, token } = {}) => {
         stopFillerAI();
+        clearReconnectState();
         spectatorMode  = false;
         onlineRole     = role;
         onlineMode     = true;
@@ -1562,6 +1583,7 @@ function initSocket(errorElId, callback) {
 
     // Shown to the spectator when a slot opens up (no accept needed - they're pre-accepted)
     socket.on('spectator-slot-offer', ({ opponentName } = {}) => {
+        clearReconnectState();
         document.getElementById('spectator-slot-opponent').textContent = opponentName || 'opponent';
         document.getElementById('spectator-slot-accept').classList.add('hidden');
         if (!document.getElementById('win-overlay').classList.contains('hidden')) {
