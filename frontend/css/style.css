@@ -1678,6 +1678,7 @@ button:active {
 }
 .htp-c {
     background: #191C2A;
+    border-radius: 2px;
     position: relative;
 }
 .htp-gp1::before {
@@ -1686,6 +1687,7 @@ button:active {
     top: 0; left: 0; right: 0;
     height: 3px;
     background: rgba(158,74,64,0.8);
+    border-radius: 2px 2px 0 0;
 }
 .htp-gp2::after {
     content: '';
@@ -1693,10 +1695,8 @@ button:active {
     bottom: 0; left: 0; right: 0;
     height: 3px;
     background: rgba(62,104,168,0.8);
+    border-radius: 0 0 2px 2px;
 }
-.htp-chl   { background: #1e2a20; }
-.htp-chl-j { background: #1d2826; }
-.htp-cpath { background: #1c2228; }
 
 /* Pawns -- flat colors matching in-game, centered with transform */
 .htp-pawn {
@@ -1714,11 +1714,13 @@ button:active {
     position: absolute;
     height: 5px;
     width: 57px;  /* 2*26+5 */
+    border-radius: 2px;
 }
 .htp-wv {
     position: absolute;
     width: 5px;
     height: 57px;
+    border-radius: 2px;
 }
 .htp-pw1 { background: #9E4A40; }
 .htp-pw2 { background: #3E68A8; }
@@ -1871,9 +1873,7 @@ button:active {
     transition: background 0.15s, color 0.15s;
 }
 .htp-prev:hover { background: #2b2e3a; color: #fff; }
-/* display:none (not visibility:hidden) so the Next button fills the full width
-   on the first slide instead of leaving a dead gap where Back will appear. */
-.htp-prev.htp-hidden { display: none; }
+.htp-prev.htp-hidden { visibility: hidden; }
 .htp-next {
     flex: 1;
     padding: 10px 20px;
