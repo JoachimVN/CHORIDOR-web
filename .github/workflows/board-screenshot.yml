@@ -1,8 +1,8 @@
 name: Update board and win screenshots
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [dev]
     paths:
       - frontend/js/game.js
       - frontend/css/style.css
@@ -46,7 +46,7 @@ jobs:
             exit 0
           fi
           git commit -m "chore: update board/win screenshots [skip ci]"
-          BRANCH=${{ github.head_ref || 'dev' }}
+          BRANCH=${{ github.ref_name }}
           for i in 1 2 3 4 5; do
             git push origin HEAD:$BRANCH && exit 0
             echo "Push rejected, rebasing on origin/$BRANCH (attempt $i)..."

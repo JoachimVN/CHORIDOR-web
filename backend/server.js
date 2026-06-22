@@ -447,7 +447,7 @@ io.on('connection', socket => {
         socket.join(code);
         socket.emit('room-joined', { code, role: 'p2' });
         io.to(code).emit('game-start', { code, p1Name: room.p1Name, p2Name: room.p2Name, p1Avatar: '', p2Avatar: '' });
-        beginMatch(room, 'web-private');
+        beginMatch(room, room.source);
         io.sockets.sockets.get(room.p1)?.emit('session-token', { token: room.p1Token, role: 'p1', code });
         socket.emit('session-token', { token: room.p2Token, role: 'p2', code });
         console.log(`Room ${code}: ${room.p1} vs ${room.p2}`);
