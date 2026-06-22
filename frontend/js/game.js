@@ -2120,6 +2120,7 @@ document.getElementById('anim-btn').addEventListener('click', () => {
 
 document.getElementById('mute-btn').addEventListener('click', () => {
     muted = !muted;
+    playSound('Select'); // audible only when unmuting (the mute guard silences the other case)
     const btn  = document.getElementById('mute-btn');
     const icon = document.getElementById('mute-icon');
     btn.classList.toggle('muted', muted);
@@ -2305,13 +2306,15 @@ function _htpGoto(idx) {
 }
 
 document.getElementById('htp-close').addEventListener('click', closeHTP);
-document.getElementById('htp-prev').addEventListener('click', () => _htpGoto(_htpIdx - 1));
+document.getElementById('htp-prev').addEventListener('click', () => { playSound('Select'); _htpGoto(_htpIdx - 1); });
 document.getElementById('htp-next').addEventListener('click', () => {
-    if (_htpIdx === HTP_TOTAL - 1) closeHTP(); else _htpGoto(_htpIdx + 1);
+    if (_htpIdx === HTP_TOTAL - 1) { closeHTP(); return; }
+    playSound('Select');
+    _htpGoto(_htpIdx + 1);
 });
-document.querySelectorAll('.htp-dot').forEach(d => d.addEventListener('click', () => _htpGoto(+d.dataset.idx)));
-document.getElementById('htp-btn').addEventListener('click', showHTP);
-document.getElementById('htp-lobby-btn').addEventListener('click', showHTP);
+document.querySelectorAll('.htp-dot').forEach(d => d.addEventListener('click', () => { playSound('Select'); _htpGoto(+d.dataset.idx); }));
+document.getElementById('htp-btn').addEventListener('click', () => { playSound('Select'); showHTP(); });
+document.getElementById('htp-lobby-btn').addEventListener('click', () => { playSound('Select'); showHTP(); });
 
 // Swipe-to-navigate on the HTP card
 {
