@@ -100,8 +100,13 @@ async function win(b) {
 }
 
 (async () => {
-    const b = await chromium.launch();
-    await board(b);
-    await win(b);
-    await b.close();
-})().catch(e => { console.error(e); process.exit(1); });
+    try {
+        const b = await chromium.launch();
+        await board(b);
+        await win(b);
+        await b.close();
+    } catch (e) {
+        console.error(e);
+        process.exit(1);
+    }
+})();
