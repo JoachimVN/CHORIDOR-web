@@ -1103,14 +1103,23 @@ function updateStatus() {
 
 function checkWin(delay = 0) {
     if (gameState.p1Pawn.row === 0) {
+        reportWin('p1');
         showWinScreen(document.getElementById('p1-name').textContent, 'p1', delay);
         return true;
     }
     if (gameState.p2Pawn.row === BOARD_SIZE - 1) {
+        reportWin('p2');
         showWinScreen(document.getElementById('p2-name').textContent, 'p2', delay);
         return true;
     }
     return false;
+}
+
+// Tell the server who reached the goal so it can record the completed game for
+// analytics. Online players only (spectators and local/AI games are skipped).
+function reportWin(winnerRole) {
+    if (!onlineMode || spectatorMode || !socket) return;
+    socket.emit('report-win', { winnerRole, movesP1: gameState.movesP1, movesP2: gameState.movesP2 });
 }
 
 function populateWinStats() {

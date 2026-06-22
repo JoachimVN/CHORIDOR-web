@@ -3,6 +3,7 @@ const express  = require('express');
 const { createServer } = require('node:http');
 const { Server }       = require('socket.io');
 const path     = require('node:path');
+const analytics = require('./analytics');
 
 const app  = express();
 const http = createServer(app);
@@ -39,6 +40,41 @@ function makeCode() {
     do { code = Array.from({ length: 3 }, () => randomInt(36).toString(36)).join('').toUpperCase(); }
     while (rooms.has(code));
     return code;
+}
+
+// --- Analytics helpers ---------------------------------------------------
+// A "match" is one game played in a room. Each gets a fresh id so events from
+// the same game correlate in PostHog. source distinguishes web vs Discord.
+function beginMatch(room, source) {
+    room.matchId   = makeToken();
+    room.startedAt = Date.now();
+    room.source    = source || room.source || 'unknown';
+    room.completed = false;
+    analytics.capture('game_started', { source: room.source }, room.matchId);
+}
+
+function finishMatch(room, reason, winnerRole, extra = {}) {
+    if (!room?.matchId || room.completed) return;
+    room.completed = true;
+    analytics.capture('game_completed', {
+        source:      room.source,
+        reason,                       // 'reached-goal' | 'surrender'
+        winner_role: winnerRole || null,
+        duration_ms: room.startedAt ? Date.now() - room.startedAt : null,
+        ...extra,
+    }, room.matchId);
+}
+
+// A started game that ended without a result (someone left and nobody could
+// take their place). Guarded so completed games and never-started rooms skip.
+function abandonMatch(room, reason) {
+    if (!room?.matchId || room.completed) return;
+    room.completed = true;
+    analytics.capture('game_abandoned', {
+        source:      room.source,
+        reason,                       // 'closed'
+        duration_ms: room.startedAt ? Date.now() - room.startedAt : null,
+    }, room.matchId);
 }
 
 function makeSnapshot() {
@@ -164,6 +200,7 @@ function cancelPromotion(room, io, code) {
 }
 
 function closeRoom(room, code, notifySocketId) {
+    abandonMatch(room, 'closed');
     if (room.reconnect) { clearTimeout(room.reconnect.timer); room.reconnect = null; }
     if (notifySocketId) io.sockets.sockets.get(notifySocketId)?.emit('opponent-left');
     if (room.instanceId) activityRooms.delete(room.instanceId);
@@ -173,6 +210,7 @@ function closeRoom(room, code, notifySocketId) {
 
 // Start a fresh game between the first two live spectators; the rest keep watching.
 function recycleSpectatorsIntoGame(room, code, live) {
+    abandonMatch(room, 'closed');
     const [a, b] = live;
     room.spectators = live.slice(2);
     const p1Token = makeToken();
@@ -204,6 +242,7 @@ function recycleSpectatorsIntoGame(room, code, live) {
     });
     broadcastQueuePositions(room);
     io.to(code).emit('spectator-count', room.spectators.length);
+    beginMatch(room, room.source);
     console.log(`Room ${code}: recycled into a fresh game between two spectators`);
 }
 
@@ -358,10 +397,11 @@ io.on('connection', socket => {
 
     socket.on('create-room', ({ name } = {}) => {
         const code = makeCode();
-        rooms.set(code, { p1: socket.id, p2: null, p1Name: name || '', p1Avatar: '', spectators: [], snapshot: null, rematchReady: null, instanceId: null, pendingPromotion: null, p1Token: null, p2Token: null, reconnect: null });
+        rooms.set(code, { p1: socket.id, p2: null, p1Name: name || '', p1Avatar: '', spectators: [], snapshot: null, rematchReady: null, instanceId: null, pendingPromotion: null, p1Token: null, p2Token: null, reconnect: null, source: 'web-private' });
         socket.data.roomCode = code;
         socket.join(code);
         socket.emit('room-created', { code, role: 'p1' });
+        analytics.capture('room_created', { source: 'web-private' }, code);
         console.log(`Room ${code} created by ${socket.id}`);
     });
 
@@ -387,6 +427,7 @@ io.on('connection', socket => {
                 spectatorCount: room.spectators.length,
             });
             io.to(code).emit('spectator-count', room.spectators.length);
+            analytics.capture('spectator_joined', { source: room.source || 'web-private' }, code);
             return;
         }
         room.p2      = socket.id;
@@ -398,6 +439,7 @@ io.on('connection', socket => {
         socket.join(code);
         socket.emit('room-joined', { code, role: 'p2' });
         io.to(code).emit('game-start', { code, p1Name: room.p1Name, p2Name: room.p2Name, p1Avatar: '', p2Avatar: '' });
+        beginMatch(room, 'web-private');
         io.sockets.sockets.get(room.p1)?.emit('session-token', { token: room.p1Token, role: 'p1', code });
         socket.emit('session-token', { token: room.p2Token, role: 'p2', code });
         console.log(`Room ${code}: ${room.p1} vs ${room.p2}`);
@@ -426,6 +468,7 @@ io.on('connection', socket => {
                     spectatorCount: room.spectators.length,
                 });
                 io.to(existingCode).emit('spectator-count', room.spectators.length);
+                analytics.capture('spectator_joined', { source: 'discord' }, existingCode);
                 return;
             }
             activityRooms.delete(instanceId);
@@ -458,6 +501,7 @@ io.on('connection', socket => {
         socket.emit('game-start',   { code, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, role: 'p2' });
         p1Socket.emit('session-token', { token: p1Token, role: 'p1', code });
         socket.emit('session-token',   { token: p2Token, role: 'p2', code });
+        beginMatch(rooms.get(code), 'discord');
         console.log(`Activity room ${code}: ${p1Socket.id} vs ${socket.id}`);
     });
 
@@ -471,6 +515,24 @@ io.on('connection', socket => {
         const winnerRole = isP1 ? 'p2' : 'p1';
         const winnerName = isP1 ? room.p2Name : room.p1Name;
         io.to(code).emit('game-surrendered', { winnerRole, winnerName });
+        finishMatch(room, 'surrender', winnerRole, {
+            moves_p1: room.snapshot?.movesP1 ?? null,
+            moves_p2: room.snapshot?.movesP2 ?? null,
+        });
+    });
+
+    // Natural win (pawn reached goal) is detected client-side, so the client
+    // reports it. Both players may emit; finishMatch dedups via room.completed.
+    socket.on('report-win', ({ winnerRole, movesP1, movesP2 } = {}) => {
+        const code = socket.data.roomCode;
+        if (!code) return;
+        const room = rooms.get(code);
+        if (!room) return;
+        if (room.p1 !== socket.id && room.p2 !== socket.id) return; // players only
+        finishMatch(room, 'reached-goal', winnerRole === 'p2' ? 'p2' : 'p1', {
+            moves_p1: movesP1 ?? room.snapshot?.movesP1 ?? null,
+            moves_p2: movesP2 ?? room.snapshot?.movesP2 ?? null,
+        });
     });
 
     socket.on('rematch-request', () => {
@@ -495,6 +557,7 @@ io.on('connection', socket => {
         io.to(code).emit('rematch-start', { p1Name: room.p1Name, p2Name: room.p2Name, p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '' });
         io.sockets.sockets.get(room.p1)?.emit('session-token', { token: room.p1Token, role: 'p1', code });
         io.sockets.sockets.get(room.p2)?.emit('session-token', { token: room.p2Token, role: 'p2', code });
+        beginMatch(room, room.source);
     });
 
     socket.on('rematch-cancel', () => {
@@ -633,3 +696,11 @@ io.on('connection', socket => {
 
 const PORT = process.env.PORT || 3001;
 http.listen(PORT, () => console.log(`CHORIDOR server on :${PORT}`));
+
+// Flush buffered analytics before exiting so in-flight events aren't lost.
+for (const sig of ['SIGINT', 'SIGTERM']) {
+    process.on(sig, async () => {
+        await analytics.shutdown();
+        process.exit(0);
+    });
+}

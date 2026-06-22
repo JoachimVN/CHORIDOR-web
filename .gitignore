@@ -10,3 +10,4 @@ node_modules/
 # Audacity project temp files
 *.aup3-shm
 *.aup3-wal
+.env
