@@ -1923,7 +1923,7 @@ document.getElementById('btn-join').addEventListener('click', () => { playSound(
 document.getElementById('btn-join-back').addEventListener('click', () => { playSound('Select'); showLobbyView('lview-online'); });
 
 document.getElementById('btn-waiting-back').addEventListener('click', () => {
-    playSound('Select');
+    playSound('Close');
     spectatorMode = false;
     socket?.disconnect(); socket = null;
     showLobbyView('lview-mode');
