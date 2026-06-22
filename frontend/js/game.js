@@ -30,7 +30,7 @@ const SOCKET_PATH = location.hostname.endsWith('.discordsays.com') ? '/api/socke
 if (navigator.audioSession) navigator.audioSession.type = 'ambient';
 
 const sounds = {};
-['Move', 'Jump', 'Wall', 'Win', 'Loss', 'Select'].forEach(name => {
+['Move', 'Jump', 'Wall', 'Win', 'Loss', 'Select', 'Close'].forEach(name => {
     const a = new Audio(`audio/sfx/${name}.wav`);
     a.preload = 'auto';
     sounds[name] = a;
@@ -1625,6 +1625,8 @@ async function openLegal(url) {
 }
 
 function closeLegal() {
+    if (document.getElementById('legal-modal').classList.contains('hidden')) return;
+    playSound('Close');
     document.getElementById('legal-modal').classList.add('hidden');
 }
 
@@ -1874,7 +1876,7 @@ document.getElementById('btn-online-back').addEventListener('click', () => {
 
 document.getElementById('btn-lobby-back').addEventListener('click', () => {
     if (!softLobby) return;
-    playSound('Select');
+    playSound('Close');
     const restoreWin = softLobbyRestoreWin;
     softLobby = false; softLobbyRestoreWin = false;
     document.getElementById('btn-lobby-back').classList.add('hidden');
@@ -1924,6 +1926,7 @@ document.getElementById('btn-copy-link').addEventListener('click', () => {
 
 
 document.getElementById('win-card-close').addEventListener('click', () => {
+    playSound('Close');
     document.getElementById('win-overlay').classList.add('hidden');
     if (!spectatorMode) {
         document.getElementById('win-footer-play-again').classList.toggle('hidden', onlineMode);
@@ -2223,6 +2226,7 @@ document.getElementById('tap-confirm-yes')?.addEventListener('click', e => {
 
 document.getElementById('tap-confirm-no')?.addEventListener('click', e => {
     e.stopPropagation();
+    playSound('Close');
     clearTapPreview();
     render();
 });
@@ -2284,6 +2288,8 @@ function showHTP() {
     _htpGoto(0);
 }
 function closeHTP() {
+    if (document.getElementById('htp-overlay').classList.contains('hidden')) return;
+    playSound('Close');
     localStorage.setItem(HTP_KEY, '1');
     document.getElementById('htp-overlay').classList.add('hidden');
     _htpIdx = 0;
