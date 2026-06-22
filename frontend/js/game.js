@@ -1294,7 +1294,9 @@ function handleRematchClick() {
 }
 
 function initSocket(errorElId, callback) {
-    if (socket?.connected) { callback(); return; }
+    // Already connected: the join/create fires immediately, so the button must
+    // not stay stuck on "Connecting…" (no fresh 'connect' event will clear it).
+    if (socket?.connected) { clearConnectingBtn(); callback(); return; }
     if (socket) { socket.disconnect(); socket = null; }
 
     try {
