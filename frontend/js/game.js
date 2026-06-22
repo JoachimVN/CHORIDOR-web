@@ -1119,7 +1119,7 @@ function checkWin(delay = 0) {
 // analytics. Online players only (spectators and local/AI games are skipped).
 function reportWin(winnerRole) {
     if (!onlineMode || spectatorMode || !socket) return;
-    socket.emit('report-win', { winnerRole, movesP1: gameState.movesP1, movesP2: gameState.movesP2 });
+    socket.emit('report-win', { winnerRole });
 }
 
 function populateWinStats() {

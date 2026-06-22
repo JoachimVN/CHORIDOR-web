@@ -53,15 +53,23 @@ function beginMatch(room, source) {
     analytics.capture('game_started', { source: room.source }, room.matchId);
 }
 
-function finishMatch(room, reason, winnerRole, extra = {}) {
+function finishMatch(room, reason, winnerRole) {
     if (!room?.matchId || room.completed) return;
     room.completed = true;
+    // The snapshot is the server's authoritative game state (updated on every
+    // relayed move), so derive move/wall counts from it rather than the client.
+    const snap    = room.snapshot;
+    const movesP1 = snap?.movesP1 ?? null;
+    const movesP2 = snap?.movesP2 ?? null;
     analytics.capture('game_completed', {
         source:      room.source,
         reason,                       // 'reached-goal' | 'surrender'
         winner_role: winnerRole || null,
         duration_ms: room.startedAt ? Date.now() - room.startedAt : null,
-        ...extra,
+        moves_p1:    movesP1,
+        moves_p2:    movesP2,
+        total_moves: (movesP1 != null && movesP2 != null) ? movesP1 + movesP2 : null,
+        walls_used:  snap ? snap.walls.length : null,
     }, room.matchId);
 }
 
@@ -515,24 +523,18 @@ io.on('connection', socket => {
         const winnerRole = isP1 ? 'p2' : 'p1';
         const winnerName = isP1 ? room.p2Name : room.p1Name;
         io.to(code).emit('game-surrendered', { winnerRole, winnerName });
-        finishMatch(room, 'surrender', winnerRole, {
-            moves_p1: room.snapshot?.movesP1 ?? null,
-            moves_p2: room.snapshot?.movesP2 ?? null,
-        });
+        finishMatch(room, 'surrender', winnerRole);
     });
 
     // Natural win (pawn reached goal) is detected client-side, so the client
     // reports it. Both players may emit; finishMatch dedups via room.completed.
-    socket.on('report-win', ({ winnerRole, movesP1, movesP2 } = {}) => {
+    socket.on('report-win', ({ winnerRole } = {}) => {
         const code = socket.data.roomCode;
         if (!code) return;
         const room = rooms.get(code);
         if (!room) return;
         if (room.p1 !== socket.id && room.p2 !== socket.id) return; // players only
-        finishMatch(room, 'reached-goal', winnerRole === 'p2' ? 'p2' : 'p1', {
-            moves_p1: movesP1 ?? room.snapshot?.movesP1 ?? null,
-            moves_p2: movesP2 ?? room.snapshot?.movesP2 ?? null,
-        });
+        finishMatch(room, 'reached-goal', winnerRole === 'p2' ? 'p2' : 'p1');
     });
 
     socket.on('rematch-request', () => {
