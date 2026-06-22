@@ -1178,6 +1178,65 @@ button:active {
 .legal-modal-card a:hover { text-decoration: underline; }
 .legal-modal-card hr { border: none; border-top: 1px solid #1E2130; margin: 24px 0; }
 
+/* Resign: two-step inline confirm — first click arms, second confirms */
+#new-game-btn { position: relative; overflow: hidden; }
+
+#new-game-btn .resign-confirm-icon { display: none; }
+
+/* Reserve width for the longest label so swapping "Resign" -> "Sure?"
+   never reflows the button or the toolbar. */
+.resign-label {
+    display: inline-grid;
+    justify-items: center;
+    white-space: nowrap;
+}
+
+.resign-label::after {
+    content: 'Resign';
+    grid-area: 1 / 1;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+}
+
+.resign-label-text { grid-area: 1 / 1; }
+
+/* Armed state: button morphs in place, no popup, no layout shift */
+#new-game-btn.armed {
+    background: #9E4A4A;
+    border-color: #C86A6A;
+    box-shadow: 0 0 0 1px rgba(200, 106, 106, 0.4), 0 6px 18px rgba(158, 74, 64, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+#new-game-btn.armed .resign-icon { display: none; }
+#new-game-btn.armed .resign-confirm-icon { display: inline-block; }
+
+/* Thin countdown bar that drains over the arm window, then disarms */
+.resign-arm-bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.7);
+    transform: scaleX(0);
+    transform-origin: left center;
+    pointer-events: none;
+}
+
+@keyframes resign-arm-drain {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+}
+
+#new-game-btn.armed .resign-arm-bar {
+    animation: resign-arm-drain var(--resign-arm-ms, 3000ms) linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #new-game-btn.armed .resign-arm-bar { animation: none; transform: scaleX(0); }
+}
+
 /* Discord mobile — push content below Discord's voice overlay (~48px) */
 @media (max-width: 768px) {
     .discord-activity .app {

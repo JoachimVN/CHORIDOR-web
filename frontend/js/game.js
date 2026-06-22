@@ -2063,6 +2063,7 @@ document.getElementById('legal-modal-close').addEventListener('click', closeLega
 document.getElementById('legal-modal-x').addEventListener('click', closeLegal);
 document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
+    if (resignArmed) { disarmResign(); return; }
     if (!document.getElementById('htp-overlay').classList.contains('hidden')) { closeHTP(); return; }
     closeLegal();
     if (tapPreview || tapMovePreview) { clearTapPreview(); return; }
@@ -2093,15 +2094,58 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
     }
 });
 
-document.getElementById('new-game-btn').addEventListener('click', () => {
+// Resign uses a two-step inline confirm: the first click arms the button
+// (it morphs to a checkmark with a draining countdown bar); a second click
+// within the window resigns. It disarms on timeout, blur, or any other click.
+const RESIGN_ARM_MS = 3000;
+const resignBtn = document.getElementById('new-game-btn');
+const resignLabel = resignBtn.querySelector('.resign-label-text');
+let resignArmed = false;
+let resignArmTimer = null;
+
+function disarmResign() {
+    if (!resignArmed) return;
+    resignArmed = false;
+    clearTimeout(resignArmTimer);
+    resignArmTimer = null;
+    resignBtn.classList.remove('armed');
+    resignBtn.setAttribute('aria-label', 'Resign');
+    resignLabel.textContent = 'Resign';
+}
+
+function armResign() {
+    resignArmed = true;
+    resignBtn.style.setProperty('--resign-arm-ms', `${RESIGN_ARM_MS}ms`);
+    // Restart the drain animation cleanly if re-armed in quick succession.
+    resignBtn.classList.remove('armed');
+    void resignBtn.offsetWidth;
+    resignBtn.classList.add('armed');
+    resignBtn.setAttribute('aria-label', 'Confirm resign');
+    resignLabel.textContent = 'Sure?';
+    clearTimeout(resignArmTimer);
+    resignArmTimer = setTimeout(disarmResign, RESIGN_ARM_MS);
+}
+
+resignBtn.addEventListener('click', () => {
     if (spectatorMode || gameState.gameOver) return;
     playSound('Select');
+    if (!resignArmed) {
+        armResign();
+        return;
+    }
+    disarmResign();
     if (onlineMode) {
         socket?.emit('surrender');
     } else {
         resetGame();
     }
 });
+
+// Any click elsewhere, or losing focus, cancels the armed state.
+document.addEventListener('click', e => {
+    if (resignArmed && !resignBtn.contains(e.target)) disarmResign();
+});
+resignBtn.addEventListener('blur', disarmResign);
 
 document.getElementById('flip-btn').addEventListener('click', () => {
     if (flipAnimating) return;
