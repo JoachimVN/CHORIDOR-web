@@ -1846,13 +1846,42 @@ button:active {
 /* Navigation */
 .htp-nav {
     display: flex;
-    flex-direction: column;
     align-items: center;
     width: 100%;
     margin-top: 28px;
 }
+.htp-prev {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    margin-right: 10px;
+    border-radius: 10px;
+    border: none;
+    background: none;
+    color: #5A6080;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    overflow: hidden;
+    transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                margin 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.28s ease,
+                transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                background 0.16s ease,
+                color 0.16s ease;
+}
+.htp-prev:hover { background: #1A1D2A; color: #C8CCDC; }
+.htp-prev.htp-hidden {
+    width: 0;
+    margin-right: 0;
+    opacity: 0;
+    transform: translateX(-8px);
+    pointer-events: none;
+}
 .htp-next {
-    width: 100%;
+    flex: 1;
     padding: 13px 16px;
     border-radius: 10px;
     border: none;
@@ -1866,20 +1895,6 @@ button:active {
 }
 .htp-next:hover { background: rgba(80, 128, 200, 0.24); color: #78A8E8; }
 .htp-next:active { transform: scale(0.98); }
-.htp-prev {
-    background: none;
-    border: none;
-    color: #3A3F58;
-    font-size: 12px;
-    font-weight: bold;
-    font-family: inherit;
-    cursor: pointer;
-    padding: 8px 4px;
-    margin-top: 8px;
-    transition: color 0.2s;
-}
-.htp-prev:hover { color: #8890A8; }
-.htp-prev.htp-hidden { visibility: hidden; }
 
 /* Animations */
 @keyframes htp-arr-pulse {
