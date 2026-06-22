@@ -16,8 +16,31 @@ const COLOR_THRESHOLD = 0.1;
 
 // Suppress in-flight animations so captures are deterministic. Call once after
 // creating the page, before navigating.
+//
+// emulateMedia only helps for animations gated behind a
+// prefers-reduced-motion rule; several win-screen animations (e.g. the
+// overshooting .win-pawn bounce) are not, so a fixed-delay capture lands
+// mid-animation and the pawn edge/glow jitters a few hundred pixels run to
+// run. The init script forces every animation and transition to zero
+// duration, so each element snaps to its final keyframe and captures settle to
+// a stable frame regardless of CI timing.
 async function prepPage(page) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.addInitScript(() => {
+        const css = `*, *::before, *::after {
+            animation-duration: 0s !important;
+            animation-delay: 0s !important;
+            transition-duration: 0s !important;
+            transition-delay: 0s !important;
+        }`;
+        const inject = () => {
+            const style = document.createElement('style');
+            style.textContent = css;
+            (document.head || document.documentElement).appendChild(style);
+        };
+        if (document.head || document.documentElement) inject();
+        else document.addEventListener('DOMContentLoaded', inject);
+    });
 }
 
 // Capture the page and write it only if it differs meaningfully from the
