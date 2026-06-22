@@ -931,7 +931,10 @@ button:active {
     transition: background 0.16s ease;
 }
 
-.lobby-mode-row:active { filter: brightness(1.1); }
+/* Chromium freezes :hover on a pressed element until the button is released,
+   so holding and dragging the cursor off would leave the highlight stuck on.
+   JS toggles .cursor-out on mouseleave to force the highlight off in that case. */
+.lobby-mode-row.cursor-out { background: none !important; }
 
 .mode-icon {
     flex-shrink: 0;
@@ -975,8 +978,13 @@ button:active {
 #btn-online:hover { background: rgba(80, 128, 200, 0.14); }
 #btn-ai:hover     { background: rgba(128, 112, 200, 0.14); }
 
+#btn-local:hover:active  { background: rgba(192, 90, 78, 0.24); }
+#btn-online:hover:active { background: rgba(80, 128, 200, 0.24); }
+#btn-ai:hover:active     { background: rgba(128, 112, 200, 0.24); }
+
 #btn-create .mode-icon, #btn-join .mode-icon { color: #5080C8; }
 #btn-create:hover, #btn-join:hover { background: rgba(80, 128, 200, 0.14); }
+#btn-create:hover:active, #btn-join:hover:active { background: rgba(80, 128, 200, 0.24); }
 
 .lobby-mode-disabled { cursor: not-allowed; }
 

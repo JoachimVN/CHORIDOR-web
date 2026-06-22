@@ -1878,6 +1878,14 @@ if (joinNameInput) {
 applyPlayerNames();
 if (isDiscord) showLobbyView('lview-discord');
 
+// Chromium keeps :hover stuck on a pressed button until release, so holding
+// and dragging the cursor off a lobby row leaves the highlight on. Force it
+// off whenever the cursor actually leaves, and restore it on re-entry.
+document.querySelectorAll('.lobby-mode-row').forEach(row => {
+    row.addEventListener('mouseleave', () => row.classList.add('cursor-out'));
+    row.addEventListener('mouseenter', () => row.classList.remove('cursor-out'));
+});
+
 document.getElementById('btn-local').addEventListener('click', () => {
     playSound('Select');
     vsAI = false;
