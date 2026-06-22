@@ -26,7 +26,7 @@ jobs:
         run: node --check frontend/js/game.js
 
       - name: Install backend dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
         working-directory: backend
 
       - name: Check backend JS syntax
