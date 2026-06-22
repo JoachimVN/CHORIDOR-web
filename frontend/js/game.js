@@ -1270,6 +1270,9 @@ function leaveSoftLobby() {
     spectatorMode = false;
     socket?.disconnect(); socket = null;
     softLobby = false; softLobbyRestoreWin = false;
+    // The back X only works while softLobby is true; hide it so it does not
+    // linger as a dead button after leaving (e.g. creating an online room).
+    document.getElementById('btn-lobby-back').classList.add('hidden');
     resetGame();
 }
 
