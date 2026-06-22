@@ -1885,15 +1885,15 @@ button:active {
     padding: 13px 16px;
     border-radius: 10px;
     border: none;
-    background: rgba(80, 128, 200, 0.14);
-    color: #6898D8;
+    background: #162032;
+    color: #8FB4E8;
     font-family: inherit;
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
     transition: background 0.16s ease, color 0.16s ease, transform 0.1s ease;
 }
-.htp-next:hover { background: rgba(80, 128, 200, 0.24); color: #78A8E8; }
+.htp-next:hover { background: #1D2B44; color: #A8C6F0; }
 .htp-next:active { transform: scale(0.98); }
 
 /* Animations */
