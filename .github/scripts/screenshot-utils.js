@@ -1,6 +1,8 @@
-const fs = require('node:fs');
-const { PNG } = require('pngjs');
-const pixelmatch = require('pixelmatch');
+import fs from 'node:fs';
+import pngjs from 'pngjs';
+import pixelmatch from 'pixelmatch';
+
+const { PNG } = pngjs;
 
 // Default minimum number of differing pixels before we treat a screenshot as
 // changed and overwrite the committed baseline. Anti-aliased pixels are excluded
@@ -86,4 +88,4 @@ async function saveIfChanged(page, outPath, options = {}) {
     return true;
 }
 
-module.exports = { prepPage, saveIfChanged, DIFF_PIXEL_THRESHOLD, COLOR_THRESHOLD };
+export { prepPage, saveIfChanged, DIFF_PIXEL_THRESHOLD, COLOR_THRESHOLD };
