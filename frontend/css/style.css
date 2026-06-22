@@ -1876,7 +1876,9 @@ button:active {
     transition: background 0.15s, color 0.15s;
 }
 .htp-prev:hover { background: #2b2e3a; color: #fff; }
-.htp-prev.htp-hidden { visibility: hidden; }
+/* display:none (not visibility:hidden) so the Next button fills the full width
+   on the first slide instead of leaving a dead gap where Back will appear. */
+.htp-prev.htp-hidden { display: none; }
 .htp-next {
     flex: 1;
     padding: 10px 20px;
