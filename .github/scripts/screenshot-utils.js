@@ -2,13 +2,18 @@ const fs = require('node:fs');
 const { PNG } = require('pngjs');
 const pixelmatch = require('pixelmatch');
 
-// Minimum number of differing pixels before we treat a screenshot as changed
-// and overwrite the committed baseline. Anti-aliased pixels are excluded and a
-// per-pixel colour tolerance is applied, so a deterministic re-render of the
-// same scene settles to ~0 diff. This floor only has to clear residual jitter,
-// so it is deliberately low: a single changed glyph (a move count, the version
-// string, a label) is hundreds of pixels and comfortably clears it. The intent
-// is to swallow rendering noise, never a real visual change.
+// Default minimum number of differing pixels before we treat a screenshot as
+// changed and overwrite the committed baseline. Anti-aliased pixels are excluded
+// and a per-pixel colour tolerance is applied, so a deterministic re-render of
+// the same scene settles to ~0 diff. The floor only has to clear residual
+// rendering noise, never a real visual change.
+//
+// Beware: this floor also sets the smallest change we can detect. Measured on
+// CI, an unchanged lobby renders at 0 px (occasionally up to ~8), while a
+// version-string bump in the small low-contrast footer moves only ~20 px. So 50
+// is far too coarse for tiny text changes. Captures with small but meaningful
+// text (e.g. the lobby version) pass a lower `diffThreshold` via saveIfChanged
+// options; captures dominated by large elements (the board) keep this default.
 const DIFF_PIXEL_THRESHOLD = 50;
 
 // Per-pixel colour tolerance (0-1). Higher tolerates more subtle shading drift.
@@ -46,10 +51,14 @@ async function prepPage(page) {
 // Capture the page and write it only if it differs meaningfully from the
 // committed baseline. Returns true when the file was (over)written.
 async function saveIfChanged(page, outPath, options = {}) {
+    // diffThreshold overrides the default change floor; the rest are Playwright
+    // screenshot options.
+    const { diffThreshold = DIFF_PIXEL_THRESHOLD, ...shotOptions } = options;
+
     // Make sure fonts are loaded so glyphs are not captured mid-swap.
     await page.evaluate(() => (document.fonts ? document.fonts.ready : null));
 
-    const buf = await page.screenshot(options);
+    const buf = await page.screenshot(shotOptions);
     const next = PNG.sync.read(buf);
 
     if (fs.existsSync(outPath)) {
@@ -65,8 +74,8 @@ async function saveIfChanged(page, outPath, options = {}) {
                 next.width, next.height,
                 { threshold: COLOR_THRESHOLD, includeAA: false },
             );
-            if (changed <= DIFF_PIXEL_THRESHOLD) {
-                console.log(`${outPath}: ${changed} px changed (<= ${DIFF_PIXEL_THRESHOLD}), keeping baseline.`);
+            if (changed <= diffThreshold) {
+                console.log(`${outPath}: ${changed} px changed (<= ${diffThreshold}), keeping baseline.`);
                 return false;
             }
             console.log(`${outPath}: ${changed} px changed, updating.`);
