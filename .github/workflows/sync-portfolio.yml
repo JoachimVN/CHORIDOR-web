@@ -14,7 +14,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Clone portfolio repo
-        run: git clone https://x-access-token:${{ secrets.PORTFOLIO_TOKEN }}@github.com/JoachimVN/JoachimVN.github.io.git portfolio
+        env:
+          PORTFOLIO_TOKEN: ${{ secrets.PORTFOLIO_TOKEN }}
+        run: git clone "https://x-access-token:${PORTFOLIO_TOKEN}@github.com/JoachimVN/JoachimVN.github.io.git" portfolio
 
       - name: Sync frontend -> choridor/
         run: |

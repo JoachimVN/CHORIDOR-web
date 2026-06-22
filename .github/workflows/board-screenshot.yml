@@ -1,8 +1,8 @@
 name: Update board and win screenshots
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [dev]
     paths:
       - frontend/js/game.js
       - frontend/css/style.css
@@ -25,10 +25,12 @@ jobs:
           node-version: 20
 
       - name: Install Playwright and Chromium
-        run: npm install playwright && npx playwright install chromium --with-deps
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.61.0
+          ./node_modules/.bin/playwright install chromium --with-deps
 
       - name: Serve frontend
-        run: npx serve frontend --listen 4321 &
+        run: python3 -m http.server 4321 --directory frontend &
 
       - name: Wait for server
         run: sleep 3
@@ -46,7 +48,7 @@ jobs:
             exit 0
           fi
           git commit -m "chore: update board/win screenshots [skip ci]"
-          BRANCH=${{ github.head_ref || 'dev' }}
+          BRANCH=${{ github.ref_name }}
           for i in 1 2 3 4 5; do
             git push origin HEAD:$BRANCH && exit 0
             echo "Push rejected, rebasing on origin/$BRANCH (attempt $i)..."
