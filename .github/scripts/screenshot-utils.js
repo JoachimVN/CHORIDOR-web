@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('node:fs');
 const { PNG } = require('pngjs');
 const pixelmatch = require('pixelmatch');
 
