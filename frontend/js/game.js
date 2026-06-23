@@ -1263,6 +1263,14 @@ function showWinScreen(winner, playerClass, delay = 0, reason = 'reached-goal') 
     }
     document.getElementById('win-card').className  = `win-card ${playerClass}`;
     document.getElementById('win-pawn').className  = `win-pawn ${playerClass}`;
+    // Show the winner's avatar in the big pawn dot (Discord pic or AI robot); falls back to the colored dot.
+    const winnerAvatar = document.getElementById(`${playerClass}-avatar-img`);
+    const winPawnImg   = document.getElementById('win-pawn-img');
+    if (winPawnImg) {
+        const src = winnerAvatar && !winnerAvatar.classList.contains('hidden') ? winnerAvatar.getAttribute('src') : '';
+        if (src) { winPawnImg.src = src; winPawnImg.classList.remove('hidden'); }
+        else     { winPawnImg.removeAttribute('src'); winPawnImg.classList.add('hidden'); }
+    }
     const msg = document.getElementById('win-message');
     msg.textContent = winner === 'You' ? 'You win!' : `${winner} wins!`;
     msg.className   = `win-title ${playerClass}`;
