@@ -2384,6 +2384,15 @@ if (isDiscord) try {
         const data = await res.json();
         if (data.access_token) await sdk.commands.authenticate({ access_token: data.access_token });
         discordSdk = sdk;
+        // Discord proxies all Activity traffic through its own (US) servers, so
+        // PostHog GeoIP collapses every Discord player to one location. The user's
+        // Discord locale is the only region signal available inside the sandbox;
+        // stamp it on every event as a super property so analytics can break down
+        // by it. Swallowed so analytics never breaks gameplay.
+        try {
+            const { locale } = await sdk.commands.userSettingsGetLocale();
+            if (locale && phReady) posthog.register({ discord_locale: locale });
+        } catch { /* ignore */ }
         setDiscordPresence({ state: 'In lobby', assets: { large_image: 'embedded_cover', large_text: 'CHORIDOR', small_image: 'choridor_icon', small_text: 'CHORIDOR' } });
         if (data.username) {
             myAvatar = data.avatarUrl || '';
