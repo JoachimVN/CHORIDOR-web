@@ -1263,19 +1263,7 @@ function showWinScreen(winner, playerClass, delay = 0, reason = 'reached-goal') 
     }
     document.getElementById('win-card').className  = `win-card ${playerClass}`;
     document.getElementById('win-pawn').className  = `win-pawn ${playerClass}`;
-    // Show the winner's avatar in the big pawn dot. A winning AI uses its own win
-    // portrait (IRobot2); otherwise mirror the board avatar (Discord pic), falling
-    // back to the plain colored dot.
-    const winPawnImg = document.getElementById('win-pawn-img');
-    if (winPawnImg) {
-        const winnerIsAI   = vsAI && playerClass === aiPlayer;
-        const winnerAvatar = document.getElementById(`${playerClass}-avatar-img`);
-        const src = winnerIsAI
-            ? ROBOT_WIN_PFP
-            : (winnerAvatar && !winnerAvatar.classList.contains('hidden') ? winnerAvatar.getAttribute('src') : '');
-        if (src) { winPawnImg.src = src; winPawnImg.classList.remove('hidden'); }
-        else     { winPawnImg.removeAttribute('src'); winPawnImg.classList.add('hidden'); }
-    }
+    setWinnerPawnAvatar(playerClass);
     const msg = document.getElementById('win-message');
     msg.textContent = winner === 'You' ? 'You win!' : `${winner} wins!`;
     msg.className   = `win-title ${playerClass}`;
@@ -1963,6 +1951,23 @@ function setAiAvatars() {
     const humanPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
     setPlayerAvatar(aiPlayer, ROBOT_PFP);
     setPlayerAvatar(humanPlayer, myAvatar);
+}
+
+// Picture in the win-card pawn dot: the AI's win portrait when the AI wins,
+// otherwise the winner's board avatar (Discord pic), else the plain colored dot.
+function winnerPawnSrc(playerClass) {
+    if (vsAI && playerClass === aiPlayer) return ROBOT_WIN_PFP;
+    const board = document.getElementById(`${playerClass}-avatar-img`);
+    if (board && !board.classList.contains('hidden')) return board.getAttribute('src') || '';
+    return '';
+}
+
+function setWinnerPawnAvatar(playerClass) {
+    const img = document.getElementById('win-pawn-img');
+    if (!img) return;
+    const src = winnerPawnSrc(playerClass);
+    if (src) { img.src = src; img.classList.remove('hidden'); }
+    else     { img.removeAttribute('src'); img.classList.add('hidden'); }
 }
 
 function applyPlayerNames() {
