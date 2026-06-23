@@ -1,5 +1,5 @@
-const { chromium } = require('playwright');
-const { prepPage, saveIfChanged } = require('./screenshot-utils');
+import { chromium } from 'playwright';
+import { prepPage, saveIfChanged } from './screenshot-utils.js';
 
 const BASE = 'http://localhost:4321';
 const OUT  = 'docs/screenshots';
@@ -49,15 +49,15 @@ async function injectState(p, state) {
     const allWalls = [...state.p1Walls, ...state.p2Walls];
     const numP1    = state.p1Walls.length;
     await p.evaluate(({ p1Pawn, p2Pawn, allWalls, numP1, wallCounts, extra }) => {
-        const gs      = window.__choridor.gameState;
+        const gs      = globalThis.__choridor.gameState;
         gs.p1Pawn     = p1Pawn;
         gs.p2Pawn     = p2Pawn;
         gs.walls      = new Set(allWalls.map(w => JSON.stringify(w)));
         gs.wallOwners = new Map(allWalls.map((w, i) => [JSON.stringify(w), i < numP1 ? 'p1' : 'p2']));
         gs.wallCounts = wallCounts;
         Object.assign(gs, extra || {});
-        window.__choridor.updateWallCounts();
-        window.__choridor.updateLegalMoves();
+        globalThis.__choridor.updateWallCounts();
+        globalThis.__choridor.updateLegalMoves();
     }, { p1Pawn: state.p1Pawn, p2Pawn: state.p2Pawn, allWalls, numP1, wallCounts: state.wallCounts, extra: state.extra });
 }
 
@@ -91,7 +91,7 @@ async function win(b) {
     await p.evaluate(() => {
         document.getElementById('p1-name').textContent = 'Player 1';
         document.getElementById('p2-name').textContent = 'Player 2';
-        window.__choridor.showWinScreen('Player 1', 'p1');
+        globalThis.__choridor.showWinScreen('Player 1', 'p1');
     });
     await p.waitForTimeout(400);
     await saveIfChanged(p, `${OUT}/Win.png`);
@@ -99,9 +99,12 @@ async function win(b) {
     console.log('Win screenshot done.');
 }
 
-(async () => {
+try {
     const b = await chromium.launch();
     await board(b);
     await win(b);
     await b.close();
-})().catch(e => { console.error(e); process.exit(1); });
+} catch (e) {
+    console.error(e);
+    process.exit(1);
+}
