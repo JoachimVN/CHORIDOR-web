@@ -1323,6 +1323,7 @@ function resetGame() {
         const humanPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
         document.getElementById('p1-name').textContent = humanPlayer === 'p1' ? (getMyName() || 'You') : 'AI';
         document.getElementById('p2-name').textContent = humanPlayer === 'p2' ? (getMyName() || 'You') : 'AI';
+        setAiAvatars();
     }
     updateWallCounts();
     updateStatus();
@@ -1940,6 +1941,15 @@ function clearPlayerAvatars() {
     });
 }
 
+// Local AI face. The human keeps their Discord avatar (empty on web -> hidden),
+// the AI seat gets the robot, so AI games show profile pictures like online does.
+const ROBOT_PFP = 'images/IRobot.jpg';
+function setAiAvatars() {
+    const humanPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
+    setPlayerAvatar(aiPlayer, ROBOT_PFP);
+    setPlayerAvatar(humanPlayer, myAvatar);
+}
+
 function applyPlayerNames() {
     const name = getMyName();
     if (onlineMode) {
@@ -1958,7 +1968,7 @@ function applyPlayerNames() {
         const humanPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
         document.getElementById('p1-name').textContent = humanPlayer === 'p1' ? (name || 'You') : 'AI';
         document.getElementById('p2-name').textContent = humanPlayer === 'p2' ? (name || 'You') : 'AI';
-        clearPlayerAvatars();
+        setAiAvatars();
     } else {
         document.getElementById('p1-name').textContent = name || 'Player 1';
         document.getElementById('p2-name').textContent = 'Player 2';
@@ -2016,7 +2026,7 @@ document.getElementById('btn-ai').addEventListener('click', () => {
     if (softLobby) { softLobby = false; softLobbyRestoreWin = false; }
     document.getElementById('p1-name').textContent = getMyName() || 'You';
     document.getElementById('p2-name').textContent = 'AI';
-    clearPlayerAvatars();
+    setAiAvatars();
     hideLobby();
     resetGame();
     trackGameStarted('AI');
