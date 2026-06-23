@@ -1263,11 +1263,16 @@ function showWinScreen(winner, playerClass, delay = 0, reason = 'reached-goal') 
     }
     document.getElementById('win-card').className  = `win-card ${playerClass}`;
     document.getElementById('win-pawn').className  = `win-pawn ${playerClass}`;
-    // Show the winner's avatar in the big pawn dot (Discord pic or AI robot); falls back to the colored dot.
-    const winnerAvatar = document.getElementById(`${playerClass}-avatar-img`);
-    const winPawnImg   = document.getElementById('win-pawn-img');
+    // Show the winner's avatar in the big pawn dot. A winning AI uses its own win
+    // portrait (IRobot2); otherwise mirror the board avatar (Discord pic), falling
+    // back to the plain colored dot.
+    const winPawnImg = document.getElementById('win-pawn-img');
     if (winPawnImg) {
-        const src = winnerAvatar && !winnerAvatar.classList.contains('hidden') ? winnerAvatar.getAttribute('src') : '';
+        const winnerIsAI   = vsAI && playerClass === aiPlayer;
+        const winnerAvatar = document.getElementById(`${playerClass}-avatar-img`);
+        const src = winnerIsAI
+            ? ROBOT_WIN_PFP
+            : (winnerAvatar && !winnerAvatar.classList.contains('hidden') ? winnerAvatar.getAttribute('src') : '');
         if (src) { winPawnImg.src = src; winPawnImg.classList.remove('hidden'); }
         else     { winPawnImg.removeAttribute('src'); winPawnImg.classList.add('hidden'); }
     }
@@ -1952,6 +1957,8 @@ function clearPlayerAvatars() {
 // Local AI face. The human keeps their Discord avatar (empty on web -> hidden),
 // the AI seat gets the robot, so AI games show profile pictures like online does.
 const ROBOT_PFP = 'images/IRobot.jpg';
+// Separate, larger AI portrait shown only on the win screen when the AI wins.
+const ROBOT_WIN_PFP = 'images/IRobot2.jpg';
 function setAiAvatars() {
     const humanPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
     setPlayerAvatar(aiPlayer, ROBOT_PFP);
