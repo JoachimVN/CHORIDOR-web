@@ -1,9 +1,10 @@
-const { randomInt } = require('node:crypto');
+const { randomInt, createHmac, timingSafeEqual } = require('node:crypto');
 const express  = require('express');
 const { createServer } = require('node:http');
 const { Server }       = require('socket.io');
 const path     = require('node:path');
 const analytics = require('./analytics');
+const db        = require('./db');
 
 const app  = express();
 const http = createServer(app);
@@ -366,6 +367,24 @@ function handlePlayerDisconnect(room, code, socket, isP1) {
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+// Short signed token so a client can mark its own per-user flags without us
+// trusting a raw client-supplied id or re-hitting Discord on every write.
+const AUTH_SECRET = process.env.AUTH_SIGNING_SECRET || '';
+function signUserToken(id) {
+    if (!AUTH_SECRET) return null;
+    const sig = createHmac('sha256', AUTH_SECRET).update(String(id)).digest('hex');
+    return `${id}.${sig}`;
+}
+function verifyUserToken(token) {
+    if (!AUTH_SECRET || typeof token !== 'string') return null;
+    const dot = token.lastIndexOf('.');
+    if (dot < 1) return null;
+    const id  = token.slice(0, dot);
+    const got = Buffer.from(token.slice(dot + 1), 'hex');
+    const exp = createHmac('sha256', AUTH_SECRET).update(id).digest();
+    return got.length === exp.length && timingSafeEqual(got, exp) ? id : null;
+}
+
 app.post('/auth/discord', express.json(), async (req, res) => {
     const { code } = req.body || {};
     if (!code) return res.status(400).json({ error: 'Missing code' });
@@ -392,10 +411,23 @@ app.post('/auth/discord', express.json(), async (req, res) => {
         const avatarUrl  = user.avatar
             ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
             : `https://cdn.discordapp.com/embed/avatars/${defaultIdx}.png`;
-        res.json({ id: user.id, username: user.global_name || user.username, handle: user.username, avatarUrl, access_token: token.access_token });
+        const id = String(user.id);
+        let htpSeen = false;
+        try { await db.ensurePlayer(id); htpSeen = await db.getHtpSeen(id); }
+        catch (err) { console.warn('DB htp lookup failed:', err.message); }
+        res.json({ id, username: user.global_name || user.username, handle: user.username, avatarUrl, access_token: token.access_token, htpSeen, htpToken: signUserToken(id) });
     } catch {
         res.status(500).json({ error: 'Auth failed' });
     }
+});
+
+// Persist that this player has dismissed the tutorial, so it does not reappear
+// on their next launch even when the Discord sandbox has wiped localStorage.
+app.post('/htp-seen', express.json(), async (req, res) => {
+    const id = verifyUserToken(req.body?.token);
+    if (!id) return res.status(401).json({ error: 'Invalid token' });
+    try { await db.markHtpSeen(id); res.json({ ok: true }); }
+    catch (err) { console.warn('DB markHtpSeen failed:', err.message); res.status(500).json({ error: 'Save failed' }); }
 });
 
 io.on('connection', socket => {
@@ -696,6 +728,7 @@ io.on('connection', socket => {
     });
 });
 
+db.init();
 const PORT = process.env.PORT || 3001;
 http.listen(PORT, () => console.log(`CHORIDOR server on :${PORT}`));
 

@@ -236,6 +236,7 @@ function clearReconnectState() {
 const isDiscord       = location.hostname.endsWith('.discordsays.com');
 let discordInstanceId = null;
 let discordUserId     = null; // stable Discord user id, set after auth (analytics identity + per-user prefs)
+let htpAuthToken      = null; // signed token from auth, lets us persist this user's tutorial flag
 let discordSdk        = null;
 let discordRejoinPending = false; // true while a Discord boot rejoin is awaiting its result
 let matchStartTime    = 0;
@@ -2430,6 +2431,11 @@ if (isDiscord) try {
             discordUserId = String(data.id);
             if (phReady) { try { posthog.identify(`discord:${discordUserId}`); } catch { /* ignore */ } }
         }
+        // Server-backed tutorial flag, keyed to the Discord id so it survives the
+        // sandbox wiping localStorage between launches. Seed the local flag when
+        // the server says they've seen it; htpAuthToken lets closeHTP persist it.
+        htpAuthToken = data.htpToken || null;
+        if (data.htpSeen) { try { localStorage.setItem(htpKey(), '1'); } catch { /* ignore */ } }
         // Discord proxies all Activity traffic through its own (US) servers, so
         // PostHog GeoIP collapses every Discord player to one location. The user's
         // Discord locale is the only region signal available inside the sandbox;
@@ -2564,6 +2570,16 @@ function closeHTP() {
     if (document.getElementById('htp-overlay').classList.contains('hidden')) return;
     playSound('Close');
     localStorage.setItem(htpKey(), '1');
+    // Persist server-side too (Discord only) so it sticks across launches even if
+    // the sandbox clears localStorage. Fire-and-forget: the local flag is enough
+    // for this session.
+    if (isDiscord && htpAuthToken) {
+        fetch('/api/htp-seen', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: htpAuthToken }),
+        }).catch(() => {});
+    }
     document.getElementById('htp-overlay').classList.add('hidden');
     _htpIdx = 0;
 }
