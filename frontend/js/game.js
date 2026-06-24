@@ -102,8 +102,10 @@ function trackGameStarted(mode) {
     track('game_started', { mode });
 }
 function trackGameCompleted(winnerRole, reason) {
-    // Filler ("play AI while you wait") and spectating are not real played games.
-    if (fillerAI || spectatorMode) return;
+    // Spectating is not a played game. Filler ("play AI while you wait") games
+    // are reported under their own mode label so they show up in per-mode stats
+    // (e.g. average moves) without polluting the real AI/Online/Local series.
+    if (spectatorMode) return;
     const movesP1 = gameState.movesP1;
     const movesP2 = gameState.movesP2;
     // Outcome from this device's perspective, so a person's timeline reads as
@@ -116,7 +118,7 @@ function trackGameCompleted(winnerRole, reason) {
     let result = null;
     if (playerRole) result = winnerRole === playerRole ? 'won' : 'lost';
     track('game_completed', {
-        mode:        currentMode(),
+        mode:        fillerAI ? 'AI (waiting)' : currentMode(),
         winner_role: winnerRole,
         player_role: playerRole,
         result,
@@ -1347,6 +1349,7 @@ function startFillerAI() {
     vsAI = true;
     aiPlayer = 'p2';
     fillerAI = true;
+    clientGameStartedAt = Date.now(); // for game_completed duration; filler skips trackGameStarted
     clearPlayerAvatars();
     setFillerWaitingLabel();
     document.getElementById('filler-waiting-bar').classList.remove('hidden');
@@ -2245,7 +2248,11 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
         aiPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
         resetGame();
         triggerAI(); // fires only if AI now goes first (aiPlayer === 'p1')
-        trackGameStarted('AI');
+        // Filler games are not real AI matches: don't fire game_started (it would
+        // log a phantom 'AI' start with no completion), just restamp the clock so
+        // the filler game_completed reports a correct duration.
+        if (fillerAI) clientGameStartedAt = Date.now();
+        else trackGameStarted('AI');
     } else {
         resetGame();
         trackGameStarted('Local');
