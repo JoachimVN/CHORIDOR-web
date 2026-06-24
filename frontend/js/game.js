@@ -2629,6 +2629,7 @@ document.getElementById('htp-next').addEventListener('click', () => {
 document.querySelectorAll('.htp-dot').forEach(d => d.addEventListener('click', () => { playSound('Select'); _htpGoto(+d.dataset.idx); }));
 document.getElementById('htp-btn').addEventListener('click', () => { playSound('Select'); showHTP('in_game'); });
 document.getElementById('htp-lobby-btn').addEventListener('click', () => { playSound('Select'); showHTP('lobby'); });
+document.getElementById('htp-discord-btn').addEventListener('click', () => { playSound('Select'); showHTP('lobby'); });
 
 // Swipe-to-navigate on the HTP card
 {
