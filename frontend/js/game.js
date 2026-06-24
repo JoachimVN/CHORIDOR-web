@@ -235,6 +235,7 @@ function clearReconnectState() {
 
 const isDiscord       = location.hostname.endsWith('.discordsays.com');
 let discordInstanceId = null;
+let discordUserId     = null; // stable Discord user id, set after auth (analytics identity + per-user prefs)
 let discordSdk        = null;
 let discordRejoinPending = false; // true while a Discord boot rejoin is awaiting its result
 let matchStartTime    = 0;
@@ -2421,6 +2422,14 @@ if (isDiscord) try {
         const data = await res.json();
         if (data.access_token) await sdk.commands.authenticate({ access_token: data.access_token });
         discordSdk = sdk;
+        // Tie analytics to a stable per-user id so a player's separate launches
+        // merge into one PostHog person. Discord blocks cross-session storage, so
+        // the anonymous id resets every launch and retention is otherwise
+        // unmeasurable. Namespaced to avoid colliding with web ids.
+        if (data.id) {
+            discordUserId = String(data.id);
+            if (phReady) { try { posthog.identify(`discord:${discordUserId}`); } catch { /* ignore */ } }
+        }
         // Discord proxies all Activity traffic through its own (US) servers, so
         // PostHog GeoIP collapses every Discord player to one location. The user's
         // Discord locale is the only region signal available inside the sandbox;
@@ -2539,6 +2548,9 @@ setAnimEnabled(localStorage.getItem('choridor_anim') === '1', true);
 
 // ===== How to Play =====
 const HTP_KEY = 'choridor_htp_seen';
+// Key the "seen" flag to the Discord user so a returning player is not shown the
+// tutorial again. On web (no discordUserId) it stays the plain per-device key.
+function htpKey() { return discordUserId ? `${HTP_KEY}:${discordUserId}` : HTP_KEY; }
 let _htpIdx = 0;
 const HTP_TOTAL = 4;
 
@@ -2551,7 +2563,7 @@ function showHTP(trigger = 'lobby') {
 function closeHTP() {
     if (document.getElementById('htp-overlay').classList.contains('hidden')) return;
     playSound('Close');
-    localStorage.setItem(HTP_KEY, '1');
+    localStorage.setItem(htpKey(), '1');
     document.getElementById('htp-overlay').classList.add('hidden');
     _htpIdx = 0;
 }
@@ -2589,7 +2601,9 @@ document.getElementById('htp-lobby-btn').addEventListener('click', () => { playS
     }, { passive: true });
 }
 
-if (!localStorage.getItem(HTP_KEY)) requestAnimationFrame(() => showHTP('auto'));
+// Runs after the Discord auth block above (top-level await), so htpKey() already
+// reflects the resolved user id when present.
+if (!localStorage.getItem(htpKey())) requestAnimationFrame(() => showHTP('auto'));
 
 // Auto-rejoin on page load / refresh if a session is stored from a live game.
 // Skipped on Discord: the SDK re-initialises the socket via join-activity anyway.
