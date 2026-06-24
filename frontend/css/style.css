@@ -1354,6 +1354,47 @@ button:active {
     .discord-activity .app {
         padding-top: 0;
     }
+
+    /* In-game chrome: at pip size the top/bottom bars otherwise eat most of the
+       height and the controls crowd the bar. Strip them down so the board keeps
+       the room and nothing overflows. */
+    .top-bar {
+        height: 32px;
+        padding: 0 10px;
+        gap: 8px;
+    }
+
+    .logo-wrap { display: none; }
+
+    .player-name { font-size: 11px; }
+
+    .player-avatar {
+        width: 16px;
+        height: 16px;
+        min-width: 16px;
+        min-height: 16px;
+    }
+
+    .wall-box { height: 12px; }
+
+    .bottom-bar {
+        padding: 4px 10px;
+        gap: 8px;
+    }
+
+    .status-label { font-size: 12px; }
+
+    .controls { gap: 6px; }
+
+    .controls button {
+        padding: 6px;
+        min-width: 0;
+    }
+
+    .controls button svg {
+        width: 14px;
+        height: 14px;
+    }
 }
 
 /* Collapse text labels to icon-only before they can overflow the bottom bar */
