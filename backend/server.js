@@ -478,8 +478,8 @@ io.on('connection', socket => {
         socket.data.roomCode = code;
         socket.join(code);
         socket.emit('room-joined', { code, role: 'p2' });
-        io.to(code).emit('game-start', { code, p1Name: room.p1Name, p2Name: room.p2Name, p1Avatar: '', p2Avatar: '' });
         beginMatch(room, room.source);
+        io.to(code).emit('game-start', { code, matchId: room.matchId, p1Name: room.p1Name, p2Name: room.p2Name, p1Avatar: '', p2Avatar: '' });
         io.sockets.sockets.get(room.p1)?.emit('session-token', { token: room.p1Token, role: 'p1', code });
         socket.emit('session-token', { token: room.p2Token, role: 'p2', code });
         console.log(`Room ${code}: ${room.p1} vs ${room.p2}`);
@@ -537,11 +537,12 @@ io.on('connection', socket => {
         socket.data.activityInstanceId   = instanceId;
         p1Socket.join(code);
         socket.join(code);
-        p1Socket.emit('game-start', { code, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, role: 'p1' });
-        socket.emit('game-start',   { code, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, role: 'p2' });
+        const room = rooms.get(code);
+        beginMatch(room, 'discord');
+        p1Socket.emit('game-start', { code, matchId: room.matchId, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, role: 'p1' });
+        socket.emit('game-start',   { code, matchId: room.matchId, p1Name: pending.name, p2Name: name, p1Avatar: pending.avatarUrl, p2Avatar: avatarUrl, role: 'p2' });
         p1Socket.emit('session-token', { token: p1Token, role: 'p1', code });
         socket.emit('session-token',   { token: p2Token, role: 'p2', code });
-        beginMatch(rooms.get(code), 'discord');
         console.log(`Activity room ${code}: ${p1Socket.id} vs ${socket.id}`);
     });
 
@@ -588,10 +589,10 @@ io.on('connection', socket => {
         [room.p1Name,  room.p2Name ] = [room.p2Name,  room.p1Name ];
         [room.p1Avatar,room.p2Avatar] = [room.p2Avatar,room.p1Avatar];
         [room.p1Token, room.p2Token] = [room.p2Token, room.p1Token];
-        io.to(code).emit('rematch-start', { p1Name: room.p1Name, p2Name: room.p2Name, p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '' });
+        beginMatch(room, room.source);
+        io.to(code).emit('rematch-start', { matchId: room.matchId, p1Name: room.p1Name, p2Name: room.p2Name, p1Avatar: room.p1Avatar || '', p2Avatar: room.p2Avatar || '' });
         io.sockets.sockets.get(room.p1)?.emit('session-token', { token: room.p1Token, role: 'p1', code });
         io.sockets.sockets.get(room.p2)?.emit('session-token', { token: room.p2Token, role: 'p2', code });
-        beginMatch(room, room.source);
     });
 
     socket.on('rematch-cancel', () => {
@@ -688,6 +689,8 @@ io.on('connection', socket => {
 
         socket.emit('rejoin-success', {
             role,
+            matchId:   room.matchId,
+            startedAt: room.startedAt,
             snapshot:  room.snapshot,
             p1Name:    room.p1Name,         p2Name:   room.p2Name,
             p1Avatar:  room.p1Avatar || '', p2Avatar: room.p2Avatar || '',
