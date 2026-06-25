@@ -99,7 +99,8 @@ function currentMode() {
 let clientGameStartedAt = 0;
 function trackGameStarted(mode) {
     clientGameStartedAt = Date.now();
-    track('game_started', { mode });
+    // Online games carry the match id so both players' events join on one match.
+    track('game_started', onlineMode && currentMatchId ? { mode, match_id: currentMatchId } : { mode });
 }
 function trackGameCompleted(winnerRole, reason) {
     // Spectating is not a played game. Filler ("play AI while you wait") games
@@ -128,6 +129,7 @@ function trackGameCompleted(winnerRole, reason) {
         total_moves: movesP1 + movesP2,
         walls_used:  gameState.walls.size,
         duration_ms: clientGameStartedAt ? Date.now() - clientGameStartedAt : null,
+        match_id:    onlineMode && currentMatchId ? currentMatchId : null,
     });
 }
 
@@ -241,6 +243,7 @@ let discordSdk        = null;
 let discordRejoinPending = false; // true while a Discord boot rejoin is awaiting its result
 let matchStartTime    = 0;
 let matchRoomCode     = '';
+let currentMatchId    = ''; // server's per-match token; stamped on online game events so both players' events join on one match
 let _presenceTimer    = null;
 // Discord (notably on mobile) hands the activity iframe a layout viewport that
 // can be far larger than the on-screen box, so 100dvh/vh lay the app out too
@@ -1491,7 +1494,7 @@ function initSocket(errorElId, callback) {
         if (token && role && code) storeSession({ code, role, token });
     });
 
-    socket.on('rejoin-success', ({ role, snapshot, p1Name, p2Name, p1Avatar, p2Avatar, code } = {}) => {
+    socket.on('rejoin-success', ({ role, snapshot, p1Name, p2Name, p1Avatar, p2Avatar, code, matchId } = {}) => {
         discordRejoinPending = false;
         spectatorMode        = false;
         onlineRole           = role;
@@ -1501,6 +1504,7 @@ function initSocket(errorElId, callback) {
         opponentName   = role === 'p1' ? (p2Name   || '') : (p1Name   || '');
         opponentAvatar = role === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
         matchRoomCode  = code || matchRoomCode;
+        currentMatchId = matchId || currentMatchId;
         if (!matchStartTime) matchStartTime = Math.floor(Date.now() / 1000);
         gameState.flipped = role === 'p2';
         applyPlayerNames();
@@ -1564,7 +1568,7 @@ function initSocket(errorElId, callback) {
 
     socket.on('room-joined', () => { onlineRole = 'p2'; });
 
-    socket.on('game-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, role, code } = {}) => {
+    socket.on('game-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, role, code, matchId } = {}) => {
         if (fillerAI) { playSound('Select'); showToast('Opponent found!'); }
         fillerAI = false;
         document.getElementById('filler-waiting-bar').classList.add('hidden');
@@ -1575,6 +1579,7 @@ function initSocket(errorElId, callback) {
         opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
         matchStartTime = Math.floor(Date.now() / 1000);
         matchRoomCode  = code || '';
+        currentMatchId = matchId || '';
         onlineMode = true;
         hideLobby();
         applyPlayerNames();
@@ -1595,7 +1600,7 @@ function initSocket(errorElId, callback) {
     });
     socket.on('rematch-cancelled', () => updateRematchBtn('idle'));
 
-    socket.on('rematch-start', ({ p1Name, p2Name, p1Avatar, p2Avatar } = {}) => {
+    socket.on('rematch-start', ({ p1Name, p2Name, p1Avatar, p2Avatar, matchId } = {}) => {
         if (spectatorMode) {
             clearReconnectState();
             document.getElementById('p1-name').textContent = p1Name || 'Player 1';
@@ -1611,6 +1616,7 @@ function initSocket(errorElId, callback) {
         opponentName   = onlineRole === 'p1' ? (p2Name   || '') : (p1Name   || '');
         opponentAvatar = onlineRole === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
         matchStartTime = Math.floor(Date.now() / 1000);
+        currentMatchId = matchId || '';
         if (softLobby) {
             softLobby = false; softLobbyRestoreWin = false;
             hideLobby();
