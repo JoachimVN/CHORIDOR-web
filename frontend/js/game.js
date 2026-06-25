@@ -141,7 +141,7 @@ function trackGameCompleted(winnerRole, reason) {
 if (navigator.audioSession) navigator.audioSession.type = 'ambient';
 
 const sounds = {};
-['Move', 'Jump', 'Wall', 'Win', 'Loss', 'Select', 'Close'].forEach(name => {
+['Move', 'Jump', 'Wall', 'Win', 'Loss', 'Select', 'Click', 'Close'].forEach(name => {
     const a = new Audio(`audio/sfx/${name}.wav`);
     a.preload = 'auto';
     sounds[name] = a;
@@ -650,7 +650,7 @@ function handleTapWall(row, col, orientation) {
     if (!wallKeepsPathsOpen(wallKey)) return;
     tapMovePreview = null;
     tapPreview = { row, col, orientation, t0: performance.now() };
-    playSound('Select');
+    playSound('Click');
     if (animEnabled) ensureAnimLoop(); else render();
     updateTapHint();
 }
@@ -662,7 +662,7 @@ function handleTapMove(row, col) {
     }
     tapPreview = null;
     tapMovePreview = { row, col };
-    playSound('Select');
+    playSound('Click');
     updateTapHint();
     render();
 }
