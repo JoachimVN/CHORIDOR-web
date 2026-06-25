@@ -1367,7 +1367,7 @@ function startFillerAI() {
     vsAI = true;
     aiPlayer = 'p2';
     fillerAI = true;
-    clientGameStartedAt = Date.now(); // for game_completed duration; filler skips trackGameStarted
+    trackGameStarted('AI (waiting)'); // stamps the duration clock and logs the start
     clearPlayerAvatars();
     setFillerWaitingLabel();
     document.getElementById('filler-waiting-bar').classList.remove('hidden');
@@ -2277,7 +2277,7 @@ document.addEventListener('keydown', e => {
 
 document.getElementById('play-again-btn').addEventListener('click', () => {
     playSound('Select');
-    track('play_again_clicked', { mode: currentMode() });
+    track('play_again_clicked', { mode: fillerAI ? 'AI (waiting)' : currentMode() });
     if (onlineMode) {
         // In online mode, go back to lobby for a new game (a fresh game_started
         // fires later via the 'game-start' socket event once re-matched).
@@ -2291,11 +2291,10 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
         aiPlayer = aiPlayer === 'p1' ? 'p2' : 'p1';
         resetGame();
         triggerAI(); // fires only if AI now goes first (aiPlayer === 'p1')
-        // Filler games are not real AI matches: don't fire game_started (it would
-        // log a phantom 'AI' start with no completion), just restamp the clock so
-        // the filler game_completed reports a correct duration.
-        if (fillerAI) clientGameStartedAt = Date.now();
-        else trackGameStarted('AI');
+        // Filler ("play AI while you wait") rematches log under their own mode so
+        // each started game is counted, with start and completion labels matching.
+        // Expect starts to outnumber completions: a found match abandons the game.
+        trackGameStarted(fillerAI ? 'AI (waiting)' : 'AI');
     } else {
         resetGame();
         trackGameStarted('Local');
