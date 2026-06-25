@@ -128,6 +128,8 @@ function trackGameCompleted(winnerRole, reason) {
         moves_p2:    movesP2,
         total_moves: movesP1 + movesP2,
         walls_used:  gameState.walls.size,
+        walls_p1:    WALLS_PER_PLAYER - gameState.wallCounts.p1,
+        walls_p2:    WALLS_PER_PLAYER - gameState.wallCounts.p2,
         duration_ms: clientGameStartedAt ? Date.now() - clientGameStartedAt : null,
         match_id:    onlineMode && currentMatchId ? currentMatchId : null,
     });
