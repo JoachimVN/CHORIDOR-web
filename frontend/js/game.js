@@ -1675,6 +1675,9 @@ function initSocket(errorElId, callback) {
         opponentName   = role === 'p1' ? (p2Name || '') : (p1Name || '');
         opponentAvatar = role === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
         matchStartTime = Math.floor(Date.now() / 1000);
+        // Promotion resets the board, so the promoted player's game begins now;
+        // stamp the start clock or game_completed would report a stale duration.
+        clientGameStartedAt = Date.now();
         if (code != null) matchRoomCode = code;
         document.getElementById('p1-name').textContent = p1Name || 'Player 1';
         document.getElementById('p2-name').textContent = p2Name || 'Player 2';
