@@ -690,6 +690,7 @@ io.on('connection', socket => {
         socket.emit('rejoin-success', {
             role,
             matchId:   room.matchId,
+            startedAt: room.startedAt,
             snapshot:  room.snapshot,
             p1Name:    room.p1Name,         p2Name:   room.p2Name,
             p1Avatar:  room.p1Avatar || '', p2Avatar: room.p2Avatar || '',

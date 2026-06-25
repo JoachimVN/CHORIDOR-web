@@ -1494,7 +1494,7 @@ function initSocket(errorElId, callback) {
         if (token && role && code) storeSession({ code, role, token });
     });
 
-    socket.on('rejoin-success', ({ role, snapshot, p1Name, p2Name, p1Avatar, p2Avatar, code, matchId } = {}) => {
+    socket.on('rejoin-success', ({ role, snapshot, p1Name, p2Name, p1Avatar, p2Avatar, code, matchId, startedAt } = {}) => {
         discordRejoinPending = false;
         spectatorMode        = false;
         onlineRole           = role;
@@ -1505,7 +1505,10 @@ function initSocket(errorElId, callback) {
         opponentAvatar = role === 'p1' ? (p2Avatar || '') : (p1Avatar || '');
         matchRoomCode  = code || matchRoomCode;
         currentMatchId = matchId || currentMatchId;
-        if (!matchStartTime) matchStartTime = Math.floor(Date.now() / 1000);
+        // Rejoin fires no game_started, so stamp the server's match start time here;
+        // otherwise game_completed reports a null or stale (previous-game) duration.
+        if (startedAt) clientGameStartedAt = startedAt;
+        if (!matchStartTime) matchStartTime = startedAt ? Math.floor(startedAt / 1000) : Math.floor(Date.now() / 1000);
         gameState.flipped = role === 'p2';
         applyPlayerNames();
         hideLobby();
