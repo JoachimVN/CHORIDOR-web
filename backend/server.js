@@ -51,7 +51,7 @@ function beginMatch(room, source) {
     room.startedAt = Date.now();
     room.source    = source || room.source || 'unknown';
     room.completed = false;
-    analytics.capture('game_started', { source: room.source }, room.matchId);
+    analytics.capture('game_started', { source: room.source, mode: 'Online' }, room.matchId);
 }
 
 function finishMatch(room, reason, winnerRole) {
@@ -64,6 +64,7 @@ function finishMatch(room, reason, winnerRole) {
     const movesP2 = snap?.movesP2 ?? null;
     analytics.capture('game_completed', {
         source:      room.source,
+        mode:        'Online',
         reason,                       // 'reached-goal' | 'surrender'
         winner_role: winnerRole || null,
         duration_ms: room.startedAt ? Date.now() - room.startedAt : null,
@@ -81,6 +82,7 @@ function abandonMatch(room, reason) {
     room.completed = true;
     analytics.capture('game_abandoned', {
         source:      room.source,
+        mode:        'Online',
         reason,                       // 'closed'
         duration_ms: room.startedAt ? Date.now() - room.startedAt : null,
     }, room.matchId);
