@@ -18,16 +18,17 @@ jobs:
           PORTFOLIO_TOKEN: ${{ secrets.PORTFOLIO_TOKEN }}
         run: git clone "https://x-access-token:${PORTFOLIO_TOKEN}@github.com/JoachimVN/JoachimVN.github.io.git" portfolio
 
-      - name: Sync frontend -> choridor/
+      - name: Sync frontend -> projects/choridor/
         run: |
-          rm -rf portfolio/choridor
-          cp -r frontend portfolio/choridor
+          rm -rf portfolio/projects/choridor
+          mkdir -p portfolio/projects
+          cp -r frontend portfolio/projects/choridor
 
       - name: Commit and push
         run: |
           cd portfolio
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add choridor/
+          git add projects/choridor/
           git diff --staged --quiet || git commit -m "chore: sync CHORIDOR from CHORIDOR-web@${{ github.sha }}"
           git push
